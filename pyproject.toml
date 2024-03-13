@@ -25,7 +25,7 @@ classifiers = [
 ]
 
 [tool.setuptools]
-packages = ["stacflow-stac-extension"]
+packages = ["stacflow_stac_extension"]
 
 [tool.setuptools.dynamic]
 version = "0.0.1"
