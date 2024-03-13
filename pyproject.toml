@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools >= 61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "StacFlow STAC extension"
+description = "Helper to build custom extensions to be used in StacFlow"
+authors = [
+    { name = "Rémi Cresson", email = "remi.cresson@inrae.fr" },
+]
+requires-python = ">=3.7"
+dependencies = [
+    "pydantic >= 2.0.0",
+    "pystac",
+]
+license = { text = "Apache-2.0" }
+dynamic = ["version"]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+[tool.setuptools]
+packages = ["stacflow-stac-extension"]
+
+[tool.setuptools.package-data]
+"stacflow" = ["templates/*.jinja2"]
+
+[tool.setuptools.dynamic]
+version = "0.0.1"
+
+[tool.pydocstyle]
+convention = "google"
+
