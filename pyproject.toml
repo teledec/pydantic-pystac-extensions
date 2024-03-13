@@ -23,12 +23,10 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
+version = "0.0.1"
 
 [tool.setuptools]
 packages = ["stacflow_stac_extension"]
-
-[tool.setuptools.dynamic]
-version = ["0.0.1"]
 
 [tool.pydocstyle]
 convention = "google"
