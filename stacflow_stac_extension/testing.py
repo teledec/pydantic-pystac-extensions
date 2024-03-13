@@ -3,7 +3,7 @@ from datetime import datetime
 import random
 
 
-def create_item(date=None):
+def create_dummy_item(date=None):
     if not date:
         date = datetime.now().replace(year=1999)
 

@@ -1,5 +1,5 @@
 from stacflow_stac_extension import create_extension_cls
-from dummy import create_item
+from stacflow_stac_extension.testing import create_dummy_item
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List
 import json
@@ -31,7 +31,7 @@ MyExtension = create_extension_cls(
 print(f"Extension schema:\n{json.dumps(MyExtension.get_schema(), indent=2)}")
 
 # Apply the extension to a `pystac.Item`
-item = create_item()
+item = create_dummy_item()
 ext_md = ExtensionModelExample(
     name="test",
     authors=["michel", "denis"],
