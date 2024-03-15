@@ -1,11 +1,12 @@
 """
 Processing extension
 """
-from typing import Union
+from typing import Any, Generic, Literal, TypeVar, Union, cast
 from pystac.extensions.base import PropertiesExtension, ExtensionManagementMixin
 import pystac
 from pydantic import BaseModel, Field
 import re
+from collections.abc import Iterable
 
 
 def create_extension_cls(
@@ -31,7 +32,10 @@ def create_extension_cls(
             "With X a single digit for major version"
         )
 
+    T = TypeVar("T", pystac.Item, pystac.Asset, pystac.Collection)
+
     class CustomExtension(
+        Generic[T],
         PropertiesExtension,
         ExtensionManagementMixin[Union[pystac.Item, pystac.Collection]]
     ):
@@ -66,22 +70,43 @@ def create_extension_cls(
             return schema_uri
 
         @classmethod
-        def get_schema(cls) -> dict:
-            return model_cls.model_json_schema(by_alias=True)
-
-        @classmethod
         def ext(
                 cls,
-                obj: pystac.Item,
+                obj: T,
                 add_if_missing: bool = False
         ) -> model_cls.__name__:
             if isinstance(obj, pystac.Item):
-                cls.validate_has_extension(obj, add_if_missing)
-                return CustomExtension(obj)
+                cls.ensure_has_extension(obj, add_if_missing)
+                return cast(CustomExtension[T],
+                            ItemCustomExtension(obj))
+            elif isinstance(obj, pystac.Asset):
+                cls.ensure_owner_has_extension(obj, add_if_missing)
+                return cast(CustomExtension[T],
+                            AssetCustomExtension(obj))
             raise pystac.ExtensionTypeError(
                 f"{model_cls.__name__} does not apply to type "
                 f"{type(obj).__name__}"
             )
+
+    class ItemCustomExtension(CustomExtension[pystac.Item]):
+
+        item: pystac.Item
+        properties: dict[str, Any]
+
+        def __init__(self, item: pystac.Item):
+            self.item = item
+            self.properties = item.properties
+
+    class AssetCustomExtension(CustomExtension[pystac.Asset]):
+        asset_href: str
+        properties: dict[str, Any]
+        additional_read_properties: Iterable[dict[str, Any]] | None = None
+
+        def __init__(self, asset: pystac.Asset):
+            self.asset_href = asset.href
+            self.properties = asset.extra_fields
+            if asset.owner and isinstance(asset.owner, pystac.Item):
+                self.additional_read_properties = [asset.owner.properties]
 
     CustomExtension.__name__ = f"CustomExtensionFrom{model_cls.__name__}"
     return CustomExtension

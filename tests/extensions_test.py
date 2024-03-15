@@ -27,34 +27,59 @@ MyExtension = create_extension_cls(
     schema_uri=SCHEMA_URI
 )
 
-# We can generate the extension schema (to be put on GitHub or anywhere else)
-print(f"Extension schema:\n{json.dumps(MyExtension.get_schema(), indent=2)}")
-
-# Apply the extension to a `pystac.Item`
-item = create_dummy_item()
+# Metadata fields
 ext_md = ExtensionModelExample(
     name="test",
     authors=["michel", "denis"],
     version="alpha"
 )
-processing_ext = MyExtension.ext(item, add_if_missing=True)
-processing_ext.apply(ext_md)
-# item.validate()  # <--- This will try to read the actual schema URI
 
-# Print the item metadata
-item_dic = item.to_dict()
-print(f"Item metadata:\n{json.dumps(item_dic, indent=2)}")
 
-# Check that we have the expected metadata in the item
-props = item_dic["properties"]
-assert all(f"{PREFIX}:{fld}" in props for fld in ext_md.__fields__)
-assert all(
-    props[f"{PREFIX}:{fld}"] == getattr(ext_md, fld)
-    for fld in ext_md.__fields__
-)
+def apply(stac_obj):
+    """
+    Apply the extension to the STAC object, which is modified inplace
 
-# Check that we can retrieve the extension metadata from the item
-read_ext = MyExtension(item)
-assert read_ext.name == ext_md.name
-assert read_ext.authors == ext_md.authors
-assert read_ext.version == ext_md.version
+    """
+    processing_ext = MyExtension.ext(stac_obj, add_if_missing=True)
+    processing_ext.apply(ext_md)
+    # item.validate()  # <--- This will try to read the actual schema URI
+
+
+def check(props):
+    """
+    Check that the properties are well filled with the metadata payload
+
+    """
+    assert all(
+        f"{PREFIX}:{field}" in props
+        for field in ext_md.__fields__
+    )
+    assert all(
+        props[f"{PREFIX}:{field}"] == getattr(ext_md, field)
+        for field in ext_md.__fields__
+    )
+
+
+def print_item(item):
+    item_dic = item.to_dict()
+    print(f"Item metadata:\n{json.dumps(item_dic, indent=2)}")
+
+
+def test_item():
+    print("Test item")
+    item = create_dummy_item()
+    apply(item)
+    print_item(item)
+    check(item.to_dict()["properties"])
+
+
+def test_asset():
+    print("Test asset")
+    item = create_dummy_item()
+    apply(item.assets["ndvi"])
+    print_item(item)
+    check(item.assets["ndvi"].extra_fields)
+
+
+test_asset()
+test_item()
