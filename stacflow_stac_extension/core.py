@@ -7,6 +7,8 @@ import pystac
 from pydantic import BaseModel, Field
 import re
 from collections.abc import Iterable
+from .schema import generate_schema
+import json
 
 
 def create_extension_cls(
@@ -75,6 +77,29 @@ def create_extension_cls(
         @classmethod
         def get_schema_uri(cls) -> str:
             return schema_uri
+
+        @classmethod
+        def get_schema(cls) -> dict:
+            return generate_schema(
+                model_cls=model_cls,
+                title=f"STAC extension from {model_cls.__name__} model",
+                description=f"STAC extension based on the {model_cls.__name__} "
+                            "model",
+                schema_uri=schema_uri
+            )
+
+        @classmethod
+        def print_schema(cls):
+            print(
+                "\033[92mPlease copy/paste the schema below in the right place "
+                f"in the repository so it can be accessed from \033[94m"
+                f"{schema_uri}\033[0m\n{json.dumps(cls.get_schema(), indent=2)}"
+            )
+
+        @classmethod
+        def export_schema(cls, json_file):
+            with open(json_file, 'w') as f:
+                json.dump(cls.get_schema(), f, indent=2)
 
         @classmethod
         def ext(

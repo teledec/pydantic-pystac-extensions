@@ -35,3 +35,5 @@ ext_md = MyExtensionMetadataModel(
 )
 
 basic_test(ext_md, MyExtension, validate=False)
+
+MyExtension.print_schema()

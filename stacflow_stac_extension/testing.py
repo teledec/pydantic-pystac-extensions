@@ -53,7 +53,13 @@ def create_dummy_item(date=None):
     return item
 
 
-def basic_test(ext_md, ext_cls, validate: bool = True):
+def basic_test(
+        ext_md,
+        ext_cls,
+        item_test: bool = True,
+        asset_test: bool = True,
+        validate: bool = True
+):
     print(
         f"Extension metadata model: \n{ext_md.__class__.schema_json(indent=2)}"
     )
@@ -106,5 +112,7 @@ def basic_test(ext_md, ext_cls, validate: bool = True):
         # Check that we can retrieve the extension metadata from the asset
         comp(item.assets["ndvi"])
 
-    test_item()
-    test_asset()
+    if item_test:
+        test_item()
+    if asset_test:
+        test_asset()
