@@ -113,8 +113,10 @@ def basic_test(
         comp(item.assets["ndvi"])
 
     if item_test:
+        print("Test item")
         test_item()
     if asset_test:
+        print("Test asset")
         test_asset()
 
 
@@ -124,9 +126,23 @@ def is_schema_url_synced(cls):
     url = cls.get_schema_uri()
     remote_schema = requests.get(url).json()
     print(
-        f"Local schema is :\n{local_schema}\nRemote schema is:\n{remote_schema}"
+        f"Local schema is :\n"
+        f"{local_schema}\n"
+        f"Remote schema is:\n"
+        f"{remote_schema}\n"
+        f"(Sync: {local_schema == remote_schema})"
     )
     if local_schema != remote_schema:
+        print("Schema differs:")
+        import difflib
+        def _json2str(dic):
+            return json.dumps(dic, indent=2).split("\n")
+
+        diff = difflib.unified_diff(
+            _json2str(local_schema),
+            _json2str(remote_schema)
+        )
+        print("\n".join(diff))
         raise ValueError(
             f"Please update the schema located in {url}"
         )
