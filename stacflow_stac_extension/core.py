@@ -1,7 +1,7 @@
 """
 Processing extension
 """
-from typing import Any, Generic, Literal, TypeVar, Union, cast
+from typing import Any, Generic, TypeVar, Union, cast
 from pystac.extensions.base import PropertiesExtension, ExtensionManagementMixin
 import pystac
 from pydantic import BaseModel, Field
@@ -39,9 +39,16 @@ def create_extension_cls(
         PropertiesExtension,
         ExtensionManagementMixin[Union[pystac.Item, pystac.Collection]]
     ):
-        def __init__(self, item: pystac.Item):
-            self.item = item
-            self.properties = item.properties
+        def __init__(self, obj: T):
+            if isinstance(obj, pystac.Item):
+                self.properties = obj.properties
+            elif isinstance(obj, pystac.Asset):
+                self.properties = obj.extra_fields
+            else:
+                raise pystac.ExtensionTypeError(
+                    f"{model_cls.__name__} cannot be instantiated from type "
+                    f"{type(obj).__name__}"
+                )
 
             # Try to get properties from STAC item
             # If not possible, self.md is set to `None`
@@ -89,13 +96,7 @@ def create_extension_cls(
             )
 
     class ItemCustomExtension(CustomExtension[pystac.Item]):
-
-        item: pystac.Item
-        properties: dict[str, Any]
-
-        def __init__(self, item: pystac.Item):
-            self.item = item
-            self.properties = item.properties
+        pass
 
     class AssetCustomExtension(CustomExtension[pystac.Asset]):
         asset_href: str
