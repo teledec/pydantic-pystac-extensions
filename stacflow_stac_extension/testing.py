@@ -116,3 +116,17 @@ def basic_test(
         test_item()
     if asset_test:
         test_asset()
+
+
+def is_schema_url_synced(cls):
+    import requests
+    local_schema = cls.get_schema()
+    url = cls.get_schema_uri()
+    remote_schema = requests.get(url).json()
+    print(
+        f"Local schema is :\n{local_schema}\nRemote schema is:\n{remote_schema}"
+    )
+    if local_schema != remote_schema:
+        raise ValueError(
+            f"Please update the schema located in {url}"
+        )
