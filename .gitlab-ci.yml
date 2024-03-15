@@ -15,12 +15,12 @@ stages:
 Flake8:
   extends: .static_analysis_base
   script:
-    - flake8 $PWD/stacflow-stac-extension
+    - flake8 $PWD/stacflow_stac_extension
 
 Pylint:
   extends: .static_analysis_base
   script:
-    - pylint --disable=too-many-arguments $PWD/stacflow-stac-extension
+    - pylint --disable=too-many-arguments $PWD/stacflow_stac_extension
 
 Codespell:
   extends: .static_analysis_base
@@ -36,6 +36,7 @@ Tests:
 
 Publish the package:
   stage: Ship
+  only: [tags]
   variables:
     PRVTOKEN: "\"PRIVATE-TOKEN: ${CI_JOB_TOKEN}\""
     URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
