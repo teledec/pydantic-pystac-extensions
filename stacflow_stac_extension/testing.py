@@ -22,8 +22,7 @@ def create_dummy_item(date=None):
         ]
     }
     asset = pystac.Asset(
-        href="https://gitlab.orfeo-toolbox.org/orfeotoolbox/"
-             "otb/-/raw/develop/Data/Input/SP67_FR_subset_1.tif"
+        href="https://example.com/SP67_FR_subset_1.tif"
     )
     val = f"item_{random.uniform(10000, 80000)}"
     spat_extent = pystac.SpatialExtent([[0, 0, 2, 3]])
@@ -38,7 +37,7 @@ def create_dummy_item(date=None):
         datetime=date,
         properties={},
         assets={"ndvi": asset},
-        href="https//fake-href.org/collections/collection-test3/items/{val}",
+        href="https://example.com/collections/collection-test3/items/{val}",
         collection="collection-test3"
     )
 
@@ -46,11 +45,7 @@ def create_dummy_item(date=None):
         id="collection-test",
         extent=pystac.Extent(spat_extent, temp_extent),
         description="bla",
-        href="http://hello.fr/collections/collection-test",
-        providers=[
-            pystac.Provider("INRAE"),
-            pystac.Provider("CDOS de Montpellier")
-        ]
+        href="http://example.com/collections/collection-test",
     )
     col.add_item(item)
 
