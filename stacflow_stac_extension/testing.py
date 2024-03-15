@@ -1,6 +1,7 @@
 import pystac
 from datetime import datetime
 import random
+import json
 
 
 def create_dummy_item(date=None):
@@ -50,3 +51,60 @@ def create_dummy_item(date=None):
     col.add_item(item)
 
     return item
+
+
+def basic_test(ext_md, ext_cls, validate: bool = True):
+    print(
+        f"Extension metadata model: \n{ext_md.__class__.schema_json(indent=2)}"
+    )
+
+    def apply(stac_obj):
+        """
+        Apply the extension to the item
+        """
+        print(f"Check extension applied to {stac_obj.__class__.__name__}")
+        ext = ext_cls.ext(stac_obj, add_if_missing=True)
+        ext.apply(ext_md)
+
+    def print_item(item):
+        """
+        Print item as JSON
+        """
+        print(json.dumps(item.to_dict(), indent=2))
+
+    def comp(stac_obj):
+        """
+        Compare the metadata carried by the stac object with the expected metadata.
+        """
+        read_ext = ext_cls(stac_obj)
+        for field in ext_md.__class__.__fields__:
+            ref = getattr(ext_md, field)
+            got = getattr(read_ext, field)
+            assert got == ref, f"'{field}': values differ: {got} (expected {ref})"
+
+    def test_item():
+        """
+        Test extension against item
+        """
+        item = create_dummy_item()
+        apply(item)
+        print_item(item)
+        if validate:
+            item.validate()  # <--- This will try to read the actual schema URI
+        # Check that we can retrieve the extension metadata from the item
+        comp(item)
+
+    def test_asset():
+        """
+        Test extension against asset
+        """
+        item = create_dummy_item()
+        apply(item.assets["ndvi"])
+        print_item(item)
+        if validate:
+            item.validate()  # <--- This will try to read the actual schema URI
+        # Check that we can retrieve the extension metadata from the asset
+        comp(item.assets["ndvi"])
+
+    test_item()
+    test_asset()
