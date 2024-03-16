@@ -1,8 +1,7 @@
-from stacflow_stac_extension import create_extension_cls
-from stacflow_stac_extension.testing import basic_test
+from stac_extension_genmeta import create_extension_cls
+from stac_extension_genmeta.testing import basic_test
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List
-import json
 
 # Extension parameters
 SCHEMA_URI: str = "https://example.com/image-process/v1.0.0/schema.json"
