@@ -1,6 +1,7 @@
-# StacFlow STAC extension
+# STAC extension for generic metadata
 
-This module is a helper to build STAC extensions.
+This module is a helper to build STAC extensions carrying metadata defined with 
+pydantic models.
 
 ## Example
 
@@ -26,7 +27,7 @@ We create a stac extension based on this metadata model using the
 `create_extension_cls()` helper.
 
 ```python
-from stacflow_stac_extension import create_extension_cls
+from stac_extension_genmeta import create_extension_cls
 
 MyExtension = create_extension_cls(
     model_cls=ModelExample,

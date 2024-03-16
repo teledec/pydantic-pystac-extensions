@@ -3,8 +3,8 @@ requires = ["setuptools >= 61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "stacflow-stac-extension"
-description = "Helper to build custom extensions to be used in StacFlow"
+name = "stac-extension-genmeta"
+description = "Helper to build custom STAC extensions based on pydantic models"
 authors = [
     { name = "Rémi Cresson", email = "remi.cresson@inrae.fr" },
 ]
@@ -19,16 +19,15 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering :: GIS",
-    "Topic :: Scientific/Engineering :: Image Processing",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
 
 [tool.setuptools]
-packages = ["stacflow_stac_extension"]
+packages = ["stac_extension_genmeta"]
 
 [tool.setuptools.dynamic]
-version = { attr = "stacflow_stac_extension.__version__" }
+version = { attr = "stac_extension_genmeta.__version__" }
 
 [tool.pydocstyle]
 convention = "google"

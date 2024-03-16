@@ -15,12 +15,12 @@ stages:
 Flake8:
   extends: .static_analysis_base
   script:
-    - flake8 $PWD/stacflow_stac_extension
+    - flake8 $PWD/stac_extension_genmeta
 
 Pylint:
   extends: .static_analysis_base
   script:
-    - pylint --disable=too-many-arguments $PWD/stacflow_stac_extension
+    - pylint --disable=too-many-arguments $PWD/stac_extension_genmeta
 
 Codespell:
   extends: .static_analysis_base
