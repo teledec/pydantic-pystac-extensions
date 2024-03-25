@@ -27,7 +27,7 @@ classifiers = [
 packages = ["stac_extension_genmeta"]
 
 [project.optional-dependencies]
-tests = ["requests", "pystac[validation]"]
+validation = ["requests", "pystac[validation]"]
 
 [tool.setuptools.dynamic]
 version = { attr = "stac_extension_genmeta.__version__" }
