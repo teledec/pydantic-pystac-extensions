@@ -69,7 +69,7 @@ def create_extension_cls(
         def apply(self, md: model_cls) -> None:
 
             # Set properties
-            dic = md.model_dump()
+            dic = md.model_dump(exclude_unset=True)
             for key, value in dic.items():
                 alias = model_cls.__fields__[key].alias
                 self._set_property(alias, value, pop_if_none=False)
