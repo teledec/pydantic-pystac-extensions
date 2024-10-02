@@ -13,8 +13,7 @@ import json
 
 def create_extension_cls(
         model_cls: BaseModel,
-        schema_uri: str,
-        strict_schema_uri: bool = False
+        schema_uri: str
 ) -> PropertiesExtension:
     """
     This method creates a pystac extension from a pydantic model.
@@ -29,7 +28,7 @@ def create_extension_cls(
     """
 
     # check URI
-    if strict_schema_uri and not re.findall(r"(?:(\/v\d\.(?:\d+\.)*\d+\/+))", schema_uri):
+    if not re.findall(r"(?:(\/v\d\.(?:\d+\.)*\d+\/+))", schema_uri):
         raise ValueError(
             "The schema_uri must contain the version in the form 'vX.Y.Z'"
             "With X a single digit for major version"
