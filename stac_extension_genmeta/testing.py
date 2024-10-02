@@ -50,7 +50,7 @@ def create_dummy_item(date=None):
     )
     col.add_item(item)
 
-    return item
+    return item, col
 
 
 def basic_test(
@@ -58,6 +58,7 @@ def basic_test(
         ext_cls,
         item_test: bool = True,
         asset_test: bool = True,
+        collection_test: bool = True,
         validate: bool = True
 ):
     print(
@@ -92,7 +93,7 @@ def basic_test(
         """
         Test extension against item
         """
-        item = create_dummy_item()
+        item, _ = create_dummy_item()
         apply(item)
         print_item(item)
         if validate:
@@ -104,7 +105,7 @@ def basic_test(
         """
         Test extension against asset
         """
-        item = create_dummy_item()
+        item, _ = create_dummy_item()
         apply(item.assets["ndvi"])
         print_item(item)
         if validate:
@@ -112,12 +113,28 @@ def basic_test(
         # Check that we can retrieve the extension metadata from the asset
         comp(item.assets["ndvi"])
 
+    def test_collection():
+        """
+        Test extension against collection
+        """
+        item, col = create_dummy_item()
+        print_item(col)
+        apply(col)
+        print_item(col)
+        if validate:
+            col.validate()  # <--- This will try to read the actual schema URI
+        # Check that we can retrieve the extension metadata from the asset
+        comp(col)
+
     if item_test:
         print("Test item")
         test_item()
     if asset_test:
         print("Test asset")
         test_asset()
+    if collection_test:
+        print("Test collection")
+        test_collection()
 
 
 def is_schema_url_synced(cls):

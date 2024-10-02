@@ -44,7 +44,7 @@ def create_extension_cls(
         def __init__(self, obj: T):
             if isinstance(obj, pystac.Item):
                 self.properties = obj.properties
-            elif isinstance(obj, pystac.Asset):
+            elif isinstance(obj, (pystac.Asset, pystac.Collection)):
                 self.properties = obj.extra_fields
             else:
                 raise pystac.ExtensionTypeError(
@@ -109,12 +109,12 @@ def create_extension_cls(
         ) -> model_cls.__name__:
             if isinstance(obj, pystac.Item):
                 cls.ensure_has_extension(obj, add_if_missing)
-                return cast(CustomExtension[T],
-                            ItemCustomExtension(obj))
+                return cast(CustomExtension[T], ItemCustomExtension(obj))
             elif isinstance(obj, pystac.Asset):
                 cls.ensure_owner_has_extension(obj, add_if_missing)
-                return cast(CustomExtension[T],
-                            AssetCustomExtension(obj))
+                return cast(CustomExtension[T], AssetCustomExtension(obj))
+            elif isinstance(obj, pystac.Collection):
+                return cast(CustomExtension[T], CollectionCustomExtension(obj))
             raise pystac.ExtensionTypeError(
                 f"{model_cls.__name__} does not apply to type "
                 f"{type(obj).__name__}"
@@ -133,6 +133,13 @@ def create_extension_cls(
             self.properties = asset.extra_fields
             if asset.owner and isinstance(asset.owner, pystac.Item):
                 self.additional_read_properties = [asset.owner.properties]
+
+    class CollectionCustomExtension(CustomExtension[pystac.Collection]):
+        properties: dict[str, Any]
+        additional_read_properties: Iterable[dict[str, Any]] | None = None
+
+        def __init__(self, collection: pystac.Collection):
+            self.properties = collection.extra_fields
 
     CustomExtension.__name__ = f"CustomExtensionFrom{model_cls.__name__}"
     return CustomExtension
