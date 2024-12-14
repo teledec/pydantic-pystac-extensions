@@ -53,6 +53,9 @@ def create_dummy_item(date=None):
     return item, col
 
 
+METHODS = ["arg", "md", "dict"]
+
+
 def basic_test(
         ext_md,
         ext_cls,
@@ -65,13 +68,23 @@ def basic_test(
         f"Extension metadata model: \n{ext_md.__class__.schema_json(indent=2)}"
     )
 
-    def apply(stac_obj):
+    def apply(stac_obj, method="arg"):
         """
         Apply the extension to the item
         """
         print(f"Check extension applied to {stac_obj.__class__.__name__}")
         ext = ext_cls.ext(stac_obj, add_if_missing=True)
-        ext.apply(ext_md)
+        if method == "arg":
+            ext.apply(ext_md)
+        elif method == "md":
+            ext.apply(md=ext_md)
+        elif method == "dict":
+            d = {
+                name: getattr(ext_md, name)
+                for name in ext_md.__fields__
+            }
+            print(f"Passing kwargs: {d}")
+            ext.apply(**d)
 
     def print_item(item):
         """
@@ -89,52 +102,53 @@ def basic_test(
             got = getattr(read_ext, field)
             assert got == ref, f"'{field}': values differ: {got} (expected {ref})"
 
-    def test_item():
+    def test_item(method):
         """
         Test extension against item
         """
         item, _ = create_dummy_item()
-        apply(item)
+        apply(item, method)
         print_item(item)
         if validate:
             item.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the item
         comp(item)
 
-    def test_asset():
+    def test_asset(method):
         """
         Test extension against asset
         """
         item, _ = create_dummy_item()
-        apply(item.assets["ndvi"])
+        apply(item.assets["ndvi"], method)
         print_item(item)
         if validate:
             item.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the asset
         comp(item.assets["ndvi"])
 
-    def test_collection():
+    def test_collection(method):
         """
         Test extension against collection
         """
         item, col = create_dummy_item()
         print_item(col)
-        apply(col)
+        apply(col, method)
         print_item(col)
         if validate:
             col.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the asset
         comp(col)
 
-    if item_test:
-        print("Test item")
-        test_item()
-    if asset_test:
-        print("Test asset")
-        test_asset()
-    if collection_test:
-        print("Test collection")
-        test_collection()
+    for method in METHODS:
+        if item_test:
+            print(f"Test item with {method} args passing strategy")
+            test_item(method)
+        if asset_test:
+            print(f"Test asset with {method} args passing strategy")
+            test_asset(method)
+        if collection_test:
+            print(f"Test collection with {method} args passing strategy")
+            test_collection(method)
 
 
 def is_schema_url_synced(cls):

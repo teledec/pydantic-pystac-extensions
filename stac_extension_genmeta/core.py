@@ -67,10 +67,19 @@ def create_extension_cls(
             # forward getattr to self.md
             return getattr(self.md, item) if self.md else None
 
-        def apply(self, md: model_cls) -> None:
+        def apply(self, md: model_cls = None, **kwargs) -> None:
+
+            if md is None and not kwargs:
+                raise ValueError("At least `md` or kwargs is required")
+
+            if md and kwargs:
+                raise ValueError("You must use either `md` or kwargs")
+
+            if md and not isinstance(md, model_cls):
+                raise TypeError(f"`md` must be an instance of {model_cls}")
 
             # Set properties
-            dic = md.model_dump(exclude_unset=True)
+            dic = md.model_dump(exclude_unset=True) if md else kwargs
             for key, value in dic.items():
                 alias = model_cls.__fields__[key].alias or key
                 self._set_property(alias, value, pop_if_none=False)
