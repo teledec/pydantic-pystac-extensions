@@ -2,7 +2,8 @@
 Processing extension
 """
 from typing import Any, Generic, TypeVar, Union, cast
-from pystac.extensions.base import PropertiesExtension, ExtensionManagementMixin
+from pystac.extensions.base import PropertiesExtension, \
+    ExtensionManagementMixin
 import pystac
 from pydantic import BaseModel, Field
 import re
@@ -71,7 +72,7 @@ def create_extension_cls(
             # Set properties
             dic = md.model_dump(exclude_unset=True)
             for key, value in dic.items():
-                alias = model_cls.__fields__[key].alias
+                alias = model_cls.__fields__[key].alias or key
                 self._set_property(alias, value, pop_if_none=False)
 
         @classmethod
@@ -114,6 +115,7 @@ def create_extension_cls(
                 cls.ensure_owner_has_extension(obj, add_if_missing)
                 return cast(CustomExtension[T], AssetCustomExtension(obj))
             elif isinstance(obj, pystac.Collection):
+                cls.ensure_has_extension(obj, add_if_missing)
                 return cast(CustomExtension[T], CollectionCustomExtension(obj))
             raise pystac.ExtensionTypeError(
                 f"{model_cls.__name__} does not apply to type "
@@ -136,7 +138,6 @@ def create_extension_cls(
 
     class CollectionCustomExtension(CustomExtension[pystac.Collection]):
         properties: dict[str, Any]
-        additional_read_properties: Iterable[dict[str, Any]] | None = None
 
         def __init__(self, collection: pystac.Collection):
             self.properties = collection.extra_fields
