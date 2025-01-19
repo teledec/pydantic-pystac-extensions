@@ -59,9 +59,8 @@ def create_extension_cls(
                 key: self._get_property(info.alias, str)
                 for key, info in model_cls.__fields__.items()
             }
-            self.md = model_cls(**props) if all(
-                prop is not None for prop in props.values()
-            ) else None
+            props = {p: v for p, v in props.items() if v is not None}
+            self.md = model_cls(**props) if props else None
 
         def __getattr__(self, item):
             # forward getattr to self.md
