@@ -18,6 +18,7 @@ class MyExtensionMetadataModel(BaseModel):
     name: str = Field(title="Process name", alias=f"{PREFIX}:name")
     authors: List[str] = Field(title="Authors", alias=f"{PREFIX}:authors")
     version: str = Field(title="Process version", alias=f"{PREFIX}:version")
+    opt_field: str | None = Field(title="Some optional field", alias=f"{PREFIX}:opt_field", default=None)
 
 
 # Create the extension class

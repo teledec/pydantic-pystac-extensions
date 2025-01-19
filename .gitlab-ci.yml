@@ -1,47 +1,20 @@
-default:
-  image: "registry.forgemia.inra.fr/cdos-pub/pycode-quality/python-venv:3.10"
-  tags: ["test"]
+include:
+  - project: "cdos-pub/pycode-quality"
+    ref: "main"
+    file:
+      - ".gitlab/ci/static-analysis.yml"
+      - ".gitlab/ci/pip.yml"
 
 stages:
-  - Code quality
+  - Static Analysis
   - Test
-  - Ship
-
-.static_analysis_base:
-  stage: Code quality
-  allow_failure: true
-  image: "registry.forgemia.inra.fr/cdos-pub/pycode-quality/python-linters:3.10"
-
-Flake8:
-  extends: .static_analysis_base
-  script:
-    - flake8 $PWD/stac_extension_genmeta
-
-Pylint:
-  extends: .static_analysis_base
-  script:
-    - pylint --disable=too-many-arguments $PWD/stac_extension_genmeta
-
-Codespell:
-  extends: .static_analysis_base
-  script:
-    - codespell --skip="*.png,*.jinja2,*venv/*"
+  - Pip
 
 Tests:
+  image: "registry.forgemia.inra.fr/cdos-pub/pycode-quality/python-venv:3.10"
   stage: Test
   script:
     - pip install pip --upgrade
     - pip install .
     - python3 tests/extensions_test.py
-
-Publish the package:
-  stage: Ship
-  only: [tags]
-  variables:
-    PRVTOKEN: "\"PRIVATE-TOKEN: ${CI_JOB_TOKEN}\""
-    URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
-  script:
-    - pip install build twine
-    - python -m build
-    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --verbose --repository-url $URL dist/*
 
