@@ -78,8 +78,8 @@ def create_extension_cls(
                 raise TypeError(f"`md` must be an instance of {model_cls}")
 
             # Set properties
-            dic = md.model_dump(exclude_unset=True) if md else kwargs
-            for key, value in dic.items():
+            md = md or model_cls(**kwargs)
+            for key, value in md.model_dump(exclude_unset=True).items():
                 alias = model_cls.__fields__[key].alias or key
                 self._set_property(alias, value, pop_if_none=False)
 

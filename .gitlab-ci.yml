@@ -13,6 +13,7 @@ stages:
 Tests:
   image: "registry.forgemia.inra.fr/cdos-pub/pycode-quality/python-venv:3.10"
   stage: Test
+  except: [main, tags]
   script:
     - pip install pip --upgrade
     - pip install .
