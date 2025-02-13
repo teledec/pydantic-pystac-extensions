@@ -2,6 +2,8 @@ import pystac
 from datetime import datetime
 import random
 import json
+import requests
+import difflib
 
 
 def create_dummy_item(date=None):
@@ -65,8 +67,10 @@ def basic_test(
         validate: bool = True
 ):
     print(
-        f"Extension metadata model: \n{ext_md.__class__.schema_json(indent=2)}"
+        f"Extension metadata model: \n{ext_md.__class__.model_json_schema()}"
     )
+
+    ext_cls.print_schema()
 
     def apply(stac_obj, method="arg"):
         """
@@ -81,7 +85,7 @@ def basic_test(
         elif method == "dict":
             d = {
                 name: getattr(ext_md, name)
-                for name in ext_md.__fields__
+                for name in ext_md.model_fields
             }
             print(f"Passing kwargs: {d}")
             ext.apply(**d)
@@ -97,7 +101,7 @@ def basic_test(
         Compare the metadata carried by the stac object with the expected metadata.
         """
         read_ext = ext_cls(stac_obj)
-        for field in ext_md.__class__.__fields__:
+        for field in ext_md.__class__.model_fields:
             ref = getattr(ext_md, field)
             got = getattr(read_ext, field)
             assert got == ref, f"'{field}': values differ: {got} (expected {ref})"
@@ -152,7 +156,6 @@ def basic_test(
 
 
 def is_schema_url_synced(cls):
-    import requests
     local_schema = cls.get_schema()
     url = cls.get_schema_uri()
     remote_schema = requests.get(url).json()
@@ -165,7 +168,6 @@ def is_schema_url_synced(cls):
     )
     if local_schema != remote_schema:
         print("Schema differs:")
-        import difflib
         def _json2str(dic):
             return json.dumps(dic, indent=2).split("\n")
 

@@ -12,7 +12,7 @@ from .schema import generate_schema
 import json
 
 
-class BaseExtensionModel(BaseException):
+class BaseExtensionModel(BaseModel):
     """Base class for extensions models."""
 
     model_config = ConfigDict(populate_by_name=True)
@@ -59,7 +59,7 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
             # If not possible, self.md is set to `None`
             props = {
                 key: self._get_property(info.alias, str)
-                for key, info in model_cls.__fields__.items()
+                for key, info in model_cls.model_fields.items()
             }
             props = {p: v for p, v in props.items() if v is not None}
             self.md = model_cls(**props) if props else None
@@ -81,7 +81,7 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
             # Set properties
             md = md or model_cls(**kwargs)
             for key, value in md.model_dump(exclude_unset=True).items():
-                alias = model_cls.__fields__[key].alias or key
+                alias = model_cls.model_fields[key].alias or key
                 self._set_property(alias, value, pop_if_none=False)
 
         @classmethod
