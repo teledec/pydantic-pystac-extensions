@@ -30,7 +30,7 @@ genmeta_cli = "stac_extension_genmeta.cli:app"
 packages = ["stac_extension_genmeta"]
 
 [project.optional-dependencies]
-validation = ["requests", "pystac[validation]"]
+test = ["requests", "pystac[validation]"]
 
 [tool.setuptools.dynamic]
 version = { attr = "stac_extension_genmeta.__version__" }

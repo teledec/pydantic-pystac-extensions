@@ -16,6 +16,6 @@ Tests:
   except: [main, tags]
   script:
     - pip install pip --upgrade
-    - pip install .
+    - pip install .[test]
     - python3 tests/extensions_test.py
 
