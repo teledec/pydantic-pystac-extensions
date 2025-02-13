@@ -23,6 +23,9 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.scripts]
+genmeta_cli = "stac_extension_genmeta.cli:app"
+
 [tool.setuptools]
 packages = ["stac_extension_genmeta"]
 
