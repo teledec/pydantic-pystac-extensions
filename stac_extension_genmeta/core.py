@@ -1,21 +1,24 @@
 """
 Processing extension
 """
+
 from typing import Any, Generic, TypeVar, Union, cast
-from pystac.extensions.base import PropertiesExtension, \
-    ExtensionManagementMixin
+from pystac.extensions.base import PropertiesExtension, ExtensionManagementMixin
 import pystac
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict
 import re
 from collections.abc import Iterable
 from .schema import generate_schema
 import json
 
 
-def create_extension_cls(
-        model_cls: BaseModel,
-        schema_uri: str
-) -> PropertiesExtension:
+class BaseExtensionModel(BaseException):
+    """Base class for extensions models."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExtension:
     """
     This method creates a pystac extension from a pydantic model.
 
@@ -40,7 +43,7 @@ def create_extension_cls(
     class CustomExtension(
         Generic[T],
         PropertiesExtension,
-        ExtensionManagementMixin[Union[pystac.Item, pystac.Collection]]
+        ExtensionManagementMixin[Union[pystac.Item, pystac.Collection]],
     ):
         def __init__(self, obj: T):
             if isinstance(obj, pystac.Item):
@@ -49,8 +52,7 @@ def create_extension_cls(
                 self.properties = obj.extra_fields
             else:
                 raise pystac.ExtensionTypeError(
-                    f"{model_cls.__name__} cannot be instantiated from type "
-                    f"{type(obj).__name__}"
+                    f"{model_cls.__name__} cannot be instantiated from type {type(obj).__name__}"
                 )
 
             # Try to get properties from STAC item
@@ -67,7 +69,6 @@ def create_extension_cls(
             return getattr(self.md, item) if self.md else None
 
         def apply(self, md: model_cls = None, **kwargs) -> None:
-
             if md is None and not kwargs:
                 raise ValueError("At least `md` or kwargs is required")
 
@@ -92,9 +93,8 @@ def create_extension_cls(
             return generate_schema(
                 model_cls=model_cls,
                 title=f"STAC extension from {model_cls.__name__} model",
-                description=f"STAC extension based on the {model_cls.__name__} "
-                            "model",
-                schema_uri=schema_uri
+                description=f"STAC extension based on the {model_cls.__name__} model",
+                schema_uri=schema_uri,
             )
 
         @classmethod
@@ -107,15 +107,11 @@ def create_extension_cls(
 
         @classmethod
         def export_schema(cls, json_file):
-            with open(json_file, 'w') as f:
+            with open(json_file, "w") as f:
                 json.dump(cls.get_schema(), f, indent=2)
 
         @classmethod
-        def ext(
-                cls,
-                obj: T,
-                add_if_missing: bool = False
-        ) -> model_cls.__name__:
+        def ext(cls, obj: T, add_if_missing: bool = False) -> model_cls.__name__:
             if isinstance(obj, pystac.Item):
                 cls.ensure_has_extension(obj, add_if_missing)
                 return cast(CustomExtension[T], ItemCustomExtension(obj))
@@ -126,8 +122,7 @@ def create_extension_cls(
                 cls.ensure_has_extension(obj, add_if_missing)
                 return cast(CustomExtension[T], CollectionCustomExtension(obj))
             raise pystac.ExtensionTypeError(
-                f"{model_cls.__name__} does not apply to type "
-                f"{type(obj).__name__}"
+                f"{model_cls.__name__} does not apply to type {type(obj).__name__}"
             )
 
     class ItemCustomExtension(CustomExtension[pystac.Item]):
