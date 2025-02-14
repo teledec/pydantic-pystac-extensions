@@ -8,8 +8,9 @@ def generate_schema(
 ) -> dict:
     """Generate the schema."""
     properties = model_cls.model_json_schema()
-    # prune "required"
+    # prune "required" and "additionalProperties"
     properties.pop("required", None)
+    properties.pop("additionalProperties", None)
     return {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "$id": schema_uri,
