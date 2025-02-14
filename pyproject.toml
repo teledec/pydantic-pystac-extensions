@@ -3,12 +3,12 @@ requires = ["setuptools >= 61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "stac-extension-genmeta"
+name = "pydantic-pystac-extensions"
 description = "Helper to build custom STAC extensions based on pydantic models"
 authors = [
     { name = "Rémi Cresson", email = "remi.cresson@inrae.fr" },
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "pydantic >= 2.0.0",
     "pystac",
@@ -23,17 +23,14 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-[project.scripts]
-genmeta_cli = "stac_extension_genmeta.cli:app"
-
 [tool.setuptools]
-packages = ["stac_extension_genmeta"]
+packages = ["pydantic_pystac_extensions"]
 
 [project.optional-dependencies]
-test = ["requests", "pystac[validation]"]
+test = ["requests", "pystac[validation]", "pytest"]
 
 [tool.setuptools.dynamic]
-version = { attr = "stac_extension_genmeta.__version__" }
+version = { attr = "pydantic_pystac_extensions.__version__" }
 
 [tool.pydocstyle]
 convention = "google"
