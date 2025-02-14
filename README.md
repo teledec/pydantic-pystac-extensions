@@ -6,7 +6,7 @@ pydantic models.
 ## Installation
 
 ```
-PIP_EXTRA_INDEX_URL=https://forgemia.inra.fr/api/v4/projects/10919/packages/pypi/simple
+PIP_EXTRA_INDEX_URL=https://forgemia.inra.fr/api/v4/projects/14431/packages/pypi/simple
 pip install pydantic-pystac-extensions
 ```
 
@@ -14,9 +14,7 @@ pip install pydantic-pystac-extensions
 
 Simple example in 4 steps.
 
-### Step 1: metadata model
-
-We define a simple metadata model.
+### Step 1: define a metadata model
 
 ```python
 from pydantic_pystac_extensions import BaseExtensionModel
