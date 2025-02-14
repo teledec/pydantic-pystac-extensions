@@ -13,7 +13,7 @@ from .schema import generate_schema
 class BaseExtensionModel(BaseModel):
     """Base class for extensions models."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
 def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExtension:
