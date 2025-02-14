@@ -6,7 +6,7 @@ include:
       - ".gitlab/ci/pip.yml"
 
 variables:
-  PIP_EXTRA_INDEX_URL: https://forgemia.inra.fr/api/v4/projects/10919/packages/pypi/simple
+  PIP_EXTRA_INDEX_URL: https://forgemia.inra.fr/api/v4/projects/14431/packages/pypi/simple
   PACKAGE_INSTALL_EXTRAS: "[test]"
 
 stages:
@@ -19,5 +19,6 @@ Tests:
   stage: Test
   allow_failure: false
   script:
+    - if [ ! -d "tests" ]; then echo "Directory `tests` not found in the repository. Please use `tests` directory to implement unit/functional tests!"; exit 1; fi
     - pytest tests/
 
