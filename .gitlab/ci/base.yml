@@ -1,0 +1,23 @@
+include:
+  - project: "cdos-pub/pycode-quality"
+    ref: "main"
+    file:
+      - ".gitlab/ci/static-analysis.yml"
+      - ".gitlab/ci/pip.yml"
+
+variables:
+  PIP_EXTRA_INDEX_URL: https://forgemia.inra.fr/api/v4/projects/10919/packages/pypi/simple
+  PACKAGE_INSTALL_EXTRAS: "[test]"
+
+stages:
+  - Static Analysis
+  - Test
+  - Pip
+
+Tests:
+  extends: .static_analysis_with_pip_install
+  stage: Test
+  allow_failure: false
+  script:
+    - pytest tests/
+

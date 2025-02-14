@@ -1,21 +1,2 @@
 include:
-  - project: "cdos-pub/pycode-quality"
-    ref: "main"
-    file:
-      - ".gitlab/ci/static-analysis.yml"
-      - ".gitlab/ci/pip.yml"
-
-stages:
-  - Static Analysis
-  - Test
-  - Pip
-
-Tests:
-  image: "registry.forgemia.inra.fr/cdos-pub/pycode-quality/python-venv:3.10"
-  stage: Test
-  except: [main, tags]
-  script:
-    - pip install pip --upgrade
-    - pip install .[test]
-    - python3 tests/extensions_test.py
-
+  - ".gitlab/ci/base.yml"

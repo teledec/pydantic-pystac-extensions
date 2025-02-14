@@ -1,12 +1,16 @@
-import pystac
-from datetime import datetime
+"""Testing module."""
+
+import os
 import random
 import json
-import requests
 import difflib
+from datetime import datetime
+import requests
+import pystac
 
 
 def create_dummy_item(date=None):
+    """Create dummy item."""
     if not date:
         date = datetime.now().replace(year=1999)
 
@@ -17,21 +21,19 @@ def create_dummy_item(date=None):
     geom = {
         "type": "Polygon",
         "coordinates": [
-            [[4.032730583418401, 43.547450099338604],
-             [4.036414917971517, 43.75162726634343],
-             [3.698685718905037, 43.75431706444037],
-             [3.6962018175925073, 43.55012996681564],
-             [4.032730583418401, 43.547450099338604]]
-        ]
+            [
+                [4.032730583418401, 43.547450099338604],
+                [4.036414917971517, 43.75162726634343],
+                [3.698685718905037, 43.75431706444037],
+                [3.6962018175925073, 43.55012996681564],
+                [4.032730583418401, 43.547450099338604],
+            ]
+        ],
     }
-    asset = pystac.Asset(
-        href="https://example.com/SP67_FR_subset_1.tif"
-    )
+    asset = pystac.Asset(href="https://example.com/SP67_FR_subset_1.tif")
     val = f"item_{random.uniform(10000, 80000)}"
     spat_extent = pystac.SpatialExtent([[0, 0, 2, 3]])
-    temp_extent = pystac.TemporalExtent(
-        intervals=[(None, None)]
-    )
+    temp_extent = pystac.TemporalExtent(intervals=[(None, None)])
 
     item = pystac.Item(
         id=val,
@@ -41,7 +43,7 @@ def create_dummy_item(date=None):
         properties={},
         assets={"ndvi": asset},
         href="https://example.com/collections/collection-test3/items/{val}",
-        collection="collection-test3"
+        collection="collection-test3",
     )
 
     col = pystac.Collection(
@@ -59,23 +61,19 @@ METHODS = ["arg", "md", "dict"]
 
 
 def basic_test(
-        ext_md,
-        ext_cls,
-        item_test: bool = True,
-        asset_test: bool = True,
-        collection_test: bool = True,
-        validate: bool = True
+    ext_md,
+    ext_cls,
+    asset_test: bool = True,
+    collection_test: bool = True,
+    validate: bool = True,
 ):
-    print(
-        f"Extension metadata model: \n{ext_md.__class__.model_json_schema()}"
-    )
+    """Perform the basic testing of the extension class."""
+    print(f"Extension metadata model: \n{ext_md.__class__.model_json_schema()}")
 
     ext_cls.print_schema()
 
     def apply(stac_obj, method="arg"):
-        """
-        Apply the extension to the item
-        """
+        """Apply the extension to the item."""
         print(f"Check extension applied to {stac_obj.__class__.__name__}")
         ext = ext_cls.ext(stac_obj, add_if_missing=True)
         if method == "arg":
@@ -83,23 +81,16 @@ def basic_test(
         elif method == "md":
             ext.apply(md=ext_md)
         elif method == "dict":
-            d = {
-                name: getattr(ext_md, name)
-                for name in ext_md.model_fields
-            }
+            d = {name: getattr(ext_md, name) for name in ext_md.model_fields}
             print(f"Passing kwargs: {d}")
             ext.apply(**d)
 
     def print_item(item):
-        """
-        Print item as JSON
-        """
+        """Print item as JSON."""
         print(json.dumps(item.to_dict(), indent=2))
 
     def comp(stac_obj):
-        """
-        Compare the metadata carried by the stac object with the expected metadata.
-        """
+        """Compare the metadata carried by the stac object with the expected metadata."""
         read_ext = ext_cls(stac_obj)
         for field in ext_md.__class__.model_fields:
             ref = getattr(ext_md, field)
@@ -107,9 +98,7 @@ def basic_test(
             assert got == ref, f"'{field}': values differ: {got} (expected {ref})"
 
     def test_item(method):
-        """
-        Test extension against item
-        """
+        """Test extension against item."""
         item, _ = create_dummy_item()
         apply(item, method)
         print_item(item)
@@ -119,9 +108,7 @@ def basic_test(
         comp(item)
 
     def test_asset(method):
-        """
-        Test extension against asset
-        """
+        """Test extension against asset."""
         item, _ = create_dummy_item()
         apply(item.assets["ndvi"], method)
         print_item(item)
@@ -131,10 +118,8 @@ def basic_test(
         comp(item.assets["ndvi"])
 
     def test_collection(method):
-        """
-        Test extension against collection
-        """
-        item, col = create_dummy_item()
+        """Test extension against collection."""
+        _, col = create_dummy_item()
         print_item(col)
         apply(col, method)
         print_item(col)
@@ -144,9 +129,8 @@ def basic_test(
         comp(col)
 
     for method in METHODS:
-        if item_test:
-            print(f"Test item with {method} args passing strategy")
-            test_item(method)
+        print(f"Test item with {method} args passing strategy")
+        test_item(method)
         if asset_test:
             print(f"Test asset with {method} args passing strategy")
             test_asset(method)
@@ -155,10 +139,19 @@ def basic_test(
             test_collection(method)
 
 
+CI_COMMIT_REF_NAME = os.environ.get("CI_COMMIT_REF_NAME")
+
+
 def is_schema_url_synced(cls):
+    """Check if the schema is in sync with the repository."""
     local_schema = cls.get_schema()
     url = cls.get_schema_uri()
-    remote_schema = requests.get(url).json()
+    url = (
+        url.replace("/-/raw/main/", f"/-/raw/{CI_COMMIT_REF_NAME}/")
+        if CI_COMMIT_REF_NAME
+        else url
+    )
+    remote_schema = requests.get(url, timeout=10).json()
     print(
         f"Local schema is :\n"
         f"{local_schema}\n"
@@ -168,14 +161,10 @@ def is_schema_url_synced(cls):
     )
     if local_schema != remote_schema:
         print("Schema differs:")
+
         def _json2str(dic):
             return json.dumps(dic, indent=2).split("\n")
 
-        diff = difflib.unified_diff(
-            _json2str(local_schema),
-            _json2str(remote_schema)
-        )
+        diff = difflib.unified_diff(_json2str(local_schema), _json2str(remote_schema))
         print("\n".join(diff))
-        raise ValueError(
-            f"Please update the schema located in {url}"
-        )
+        raise ValueError(f"Please update the schema located in {url}")

@@ -1,15 +1,13 @@
-"""
-Processing extension
-"""
+"""Generic custom pystac extensions creation."""
 
+from collections.abc import Iterable
+import json
+import re
 from typing import Any, Generic, TypeVar, Union, cast
 from pystac.extensions.base import PropertiesExtension, ExtensionManagementMixin
 import pystac
 from pydantic import BaseModel, ConfigDict
-import re
-from collections.abc import Iterable
 from .schema import generate_schema
-import json
 
 
 class BaseExtensionModel(BaseModel):
@@ -19,19 +17,7 @@ class BaseExtensionModel(BaseModel):
 
 
 def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExtension:
-    """
-    This method creates a pystac extension from a pydantic model.
-
-    Args:
-        model_cls: pydantic model class
-        schema_uri: schema URI
-
-    Returns:
-        pystac extension class
-
-    """
-
-    # check URI
+    """This method creates a pystac extension from a pydantic model."""
     if not re.findall(r"(?:(\/v\d\.(?:\d+\.)*\d+\/+))", schema_uri):
         raise ValueError(
             "The schema_uri must contain the version in the form 'vX.Y.Z'"
@@ -45,7 +31,10 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
         PropertiesExtension,
         ExtensionManagementMixin[Union[pystac.Item, pystac.Collection]],
     ):
+        """Custom extension class."""
+
         def __init__(self, obj: T):
+            """Initializer."""
             if isinstance(obj, pystac.Item):
                 self.properties = obj.properties
             elif isinstance(obj, (pystac.Asset, pystac.Collection)):
@@ -65,10 +54,11 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
             self.md = model_cls(**props) if props else None
 
         def __getattr__(self, item):
-            # forward getattr to self.md
+            """Forward getattr to self.md."""
             return getattr(self.md, item) if self.md else None
 
         def apply(self, md: model_cls = None, **kwargs) -> None:
+            """Apply the metadata."""
             if md is None and not kwargs:
                 raise ValueError("At least `md` or kwargs is required")
 
@@ -86,10 +76,12 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
 
         @classmethod
         def get_schema_uri(cls) -> str:
+            """Get schema URI."""
             return schema_uri
 
         @classmethod
         def get_schema(cls) -> dict:
+            """Get schema as dict."""
             return generate_schema(
                 model_cls=model_cls,
                 title=f"STAC extension from {model_cls.__name__} model",
@@ -99,6 +91,7 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
 
         @classmethod
         def print_schema(cls):
+            """Print schema."""
             print(
                 "\033[92mPlease copy/paste the schema below in the right place "
                 f"in the repository so it can be accessed from \033[94m"
@@ -107,18 +100,20 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
 
         @classmethod
         def export_schema(cls, json_file):
-            with open(json_file, "w") as f:
+            """Export schema."""
+            with open(json_file, "w", encoding="utf-8") as f:
                 json.dump(cls.get_schema(), f, indent=2)
 
         @classmethod
         def ext(cls, obj: T, add_if_missing: bool = False) -> model_cls.__name__:
+            """Create the extension."""
             if isinstance(obj, pystac.Item):
                 cls.ensure_has_extension(obj, add_if_missing)
                 return cast(CustomExtension[T], ItemCustomExtension(obj))
-            elif isinstance(obj, pystac.Asset):
+            if isinstance(obj, pystac.Asset):
                 cls.ensure_owner_has_extension(obj, add_if_missing)
                 return cast(CustomExtension[T], AssetCustomExtension(obj))
-            elif isinstance(obj, pystac.Collection):
+            if isinstance(obj, pystac.Collection):
                 cls.ensure_has_extension(obj, add_if_missing)
                 return cast(CustomExtension[T], CollectionCustomExtension(obj))
             raise pystac.ExtensionTypeError(
@@ -126,23 +121,29 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
             )
 
     class ItemCustomExtension(CustomExtension[pystac.Item]):
-        pass
+        """Item custom extension."""
 
     class AssetCustomExtension(CustomExtension[pystac.Asset]):
+        """Asset custom extension."""
+
         asset_href: str
         properties: dict[str, Any]
         additional_read_properties: Iterable[dict[str, Any]] | None = None
 
         def __init__(self, asset: pystac.Asset):
+            """Initializer."""
             self.asset_href = asset.href
             self.properties = asset.extra_fields
             if asset.owner and isinstance(asset.owner, pystac.Item):
                 self.additional_read_properties = [asset.owner.properties]
 
     class CollectionCustomExtension(CustomExtension[pystac.Collection]):
+        """Collection curstom extension."""
+
         properties: dict[str, Any]
 
         def __init__(self, collection: pystac.Collection):
+            """Initializer."""
             self.properties = collection.extra_fields
 
     CustomExtension.__name__ = f"CustomExtensionFrom{model_cls.__name__}"
