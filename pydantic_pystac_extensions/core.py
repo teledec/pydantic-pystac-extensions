@@ -72,7 +72,8 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
             md = md or model_cls(**kwargs)
             for key, value in md.model_dump(exclude_unset=True).items():
                 alias = model_cls.model_fields[key].alias or key
-                self._set_property(alias, value, pop_if_none=False)
+                if value:
+                    self._set_property(alias, value, pop_if_none=False)
 
         @classmethod
         def get_schema_uri(cls) -> str:
