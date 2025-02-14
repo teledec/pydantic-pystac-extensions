@@ -139,18 +139,10 @@ def basic_test(
             test_collection(method)
 
 
-CI_COMMIT_REF_NAME = os.environ.get("CI_COMMIT_REF_NAME")
-
-
 def is_schema_url_synced(cls):
     """Check if the schema is in sync with the repository."""
     local_schema = cls.get_schema()
     url = cls.get_schema_uri()
-    url = (
-        url.replace("/-/raw/main/", f"/-/raw/{CI_COMMIT_REF_NAME}/")
-        if CI_COMMIT_REF_NAME
-        else url
-    )
     remote_schema = requests.get(url, timeout=10).json()
     print(
         f"Local schema is :\n"
