@@ -1,10 +1,11 @@
 """Generate the json schema."""
 
+from typing import Type
 from pydantic import BaseModel
 
 
 def generate_schema(
-    model_cls: BaseModel, title: str, description: str, schema_uri: str
+    model_cls: Type[BaseModel], title: str, description: str, schema_uri: str
 ) -> dict:
     """Generate the schema."""
     properties = model_cls.model_json_schema()

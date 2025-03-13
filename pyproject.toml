@@ -1,12 +1,9 @@
-[build-system]
-requires = ["setuptools >= 61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "pydantic-pystac-extensions"
 description = "Helper to build custom STAC extensions based on pydantic models"
 authors = [
     { name = "Rémi Cresson", email = "remi.cresson@inrae.fr" },
+    { name = "Pablo Boizeau", email = "pablo.boizeau@ird.fr" },
 ]
 requires-python = ">=3.8"
 dependencies = [
@@ -23,15 +20,20 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[build-system]
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+
 [tool.setuptools]
 packages = ["pydantic_pystac_extensions"]
 
 [project.optional-dependencies]
 test = ["requests", "pystac[validation]", "pytest"]
 
-[tool.setuptools.dynamic]
-version = { attr = "pydantic_pystac_extensions.__version__" }
+[tool.pylint]
+disable = "W0231"
 
 [tool.pydocstyle]
 convention = "google"
-

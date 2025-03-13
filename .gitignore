@@ -1,6 +1,7 @@
 .idea/
-*/**/__pycache__
-build
-*.egg-info
+__pycache__/
+build/
+*.egg-info/
 .mypy_cache
-.vscode
+.vscode/
+*venv/

@@ -1,6 +1,5 @@
 """Testing module."""
 
-import os
 import random
 import json
 import difflib

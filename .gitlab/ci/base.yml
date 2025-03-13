@@ -14,6 +14,9 @@ stages:
   - Test
   - Pip
 
+.static_analysis_base:
+  allow_failure: false
+
 Tests:
   extends: .static_analysis_with_pip_install
   stage: Test
@@ -21,4 +24,3 @@ Tests:
   script:
     - if [ ! -d "tests" ]; then echo "Directory `tests` not found in the repository. Please use `tests` directory to implement unit/functional tests!"; exit 1; fi
     - pytest --junitxml=report.xml tests/
-

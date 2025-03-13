@@ -1,5 +1,11 @@
 """Pydantic-Pystac extensions module."""
 
+from importlib.metadata import version, PackageNotFoundError
+
 from .core import create_extension_cls, BaseExtensionModel  # noqa
 
-__version__ = "0.1.7"
+
+try:
+    __version__ = version("pydantic-pystac-extension")
+except PackageNotFoundError:
+    pass

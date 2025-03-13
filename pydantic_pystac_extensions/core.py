@@ -3,7 +3,7 @@
 from collections.abc import Iterable
 import json
 import re
-from typing import Any, Generic, TypeVar, Union, cast
+from typing import Any, Generic, TypeVar, Union, cast, Type
 from pystac.extensions.base import PropertiesExtension, ExtensionManagementMixin
 import pystac
 from pydantic import BaseModel, ConfigDict
@@ -16,7 +16,9 @@ class BaseExtensionModel(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
-def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExtension:
+def create_extension_cls(
+    model_cls: Type[BaseModel], schema_uri: str
+) -> Type[PropertiesExtension]:
     """This method creates a pystac extension from a pydantic model."""
     if not re.findall(r"(?:(\/v\d\.(?:\d+\.)*\d+\/+))", schema_uri):
         raise ValueError(
@@ -49,6 +51,7 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
             props = {
                 key: self._get_property(info.alias, str)
                 for key, info in model_cls.model_fields.items()
+                if info.alias
             }
             props = {p: v for p, v in props.items() if v is not None}
             self.md = model_cls(**props) if props else None
@@ -57,7 +60,7 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
             """Forward getattr to self.md."""
             return getattr(self.md, item) if self.md else None
 
-        def apply(self, md: model_cls = None, **kwargs) -> None:
+        def apply(self, md: model_cls = None, **kwargs):  # type: ignore
             """Apply the metadata."""
             if md is None and not kwargs:
                 raise ValueError("At least `md` or kwargs is required")
@@ -106,7 +109,7 @@ def create_extension_cls(model_cls: BaseModel, schema_uri: str) -> PropertiesExt
                 json.dump(cls.get_schema(), f, indent=2)
 
         @classmethod
-        def ext(cls, obj: T, add_if_missing: bool = False) -> model_cls.__name__:
+        def ext(cls, obj: T, add_if_missing: bool = False):
             """Create the extension."""
             if isinstance(obj, pystac.Item):
                 cls.ensure_has_extension(obj, add_if_missing)
