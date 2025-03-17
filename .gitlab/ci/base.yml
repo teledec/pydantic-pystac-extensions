@@ -23,4 +23,4 @@ Tests:
   allow_failure: false
   script:
     - if [ ! -d "tests" ]; then echo "Directory `tests` not found in the repository. Please use `tests` directory to implement unit/functional tests!"; exit 1; fi
-    - pytest --junitxml=report.xml tests/
+    - pytest --junitxml=report.xml -s

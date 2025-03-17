@@ -7,8 +7,14 @@ from datetime import datetime
 import requests
 import pystac
 
+from pydantic_pystac_extensions.core import (
+    BaseExtensionModel,
+    CustomExtension,
+    T,
+)
 
-def create_dummy_item(date=None):
+
+def create_dummy_item(date: datetime | None = None):
     """Create dummy item."""
     if not date:
         date = datetime.now().replace(year=1999)
@@ -31,8 +37,9 @@ def create_dummy_item(date=None):
     }
     asset = pystac.Asset(href="https://example.com/SP67_FR_subset_1.tif")
     val = f"item_{random.uniform(10000, 80000)}"
-    spat_extent = pystac.SpatialExtent([[0, 0, 2, 3]])
-    temp_extent = pystac.TemporalExtent(intervals=[(None, None)])
+    spat_extent = pystac.SpatialExtent([[0.0, 0.0, 2.0, 3.0]])
+    temp_extent_val: list[list[datetime | None]] = [[None, None]]
+    temp_extent = pystac.TemporalExtent(intervals=temp_extent_val)
 
     item = pystac.Item(
         id=val,
@@ -60,18 +67,21 @@ METHODS = ["arg", "md", "dict"]
 
 
 def basic_test(
-    ext_md,
-    ext_cls,
+    ext_md: BaseExtensionModel,
+    ext_cls: CustomExtension[T],
     asset_test: bool = True,
     collection_test: bool = True,
     validate: bool = True,
 ):
     """Perform the basic testing of the extension class."""
-    print(f"Extension metadata model: \n{ext_md.__class__.model_json_schema()}")
+    schema = ext_md.__class__.model_json_schema()
+    schema.pop("properties")
+    print(f"Extension metadata model: \n{schema}")
 
     ext_cls.print_schema()
+    ext_cls.export_schema("/tmp/new.json")
 
-    def apply(stac_obj, method="arg"):
+    def apply(stac_obj: T, method="arg"):
         """Apply the extension to the item."""
         print(f"Check extension applied to {stac_obj.__class__.__name__}")
         ext = ext_cls.ext(stac_obj, add_if_missing=True)
@@ -81,47 +91,49 @@ def basic_test(
             ext.apply(md=ext_md)
         elif method == "dict":
             d = {name: getattr(ext_md, name) for name in ext_md.model_fields}
+            d.pop("properties")
+            d.pop("additional_read_properties")
             print(f"Passing kwargs: {d}")
             ext.apply(**d)
 
-    def print_item(item):
+    def print_stac_obj(stac_obj: T):
         """Print item as JSON."""
-        print(json.dumps(item.to_dict(), indent=2))
+        print(json.dumps(stac_obj.to_dict(), indent=2))
 
-    def comp(stac_obj):
+    def comp(stac_obj: T):
         """Compare the metadata carried by the stac object with the expected metadata."""
-        read_ext = ext_cls(stac_obj)
+        read_ext = ext_cls.from_stac_obj(stac_obj)
         for field in ext_md.__class__.model_fields:
             ref = getattr(ext_md, field)
             got = getattr(read_ext, field)
             assert got == ref, f"'{field}': values differ: {got} (expected {ref})"
 
-    def test_item(method):
+    def test_item(method: str):
         """Test extension against item."""
         item, _ = create_dummy_item()
         apply(item, method)
-        print_item(item)
+        print_stac_obj(item)
         if validate:
             item.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the item
         comp(item)
 
-    def test_asset(method):
+    def test_asset(method: str):
         """Test extension against asset."""
         item, _ = create_dummy_item()
         apply(item.assets["ndvi"], method)
-        print_item(item)
+        print_stac_obj(item)
         if validate:
             item.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the asset
         comp(item.assets["ndvi"])
 
-    def test_collection(method):
+    def test_collection(method: str):
         """Test extension against collection."""
         _, col = create_dummy_item()
-        print_item(col)
+        print_stac_obj(col)
         apply(col, method)
-        print_item(col)
+        print_stac_obj(col)
         if validate:
             col.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the asset

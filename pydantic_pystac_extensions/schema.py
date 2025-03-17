@@ -11,6 +11,8 @@ def generate_schema(
     properties = model_cls.model_json_schema()
     # prune "required" and "additionalProperties"
     properties.pop("required", None)
+    properties["properties"].pop("properties", None)
+    properties["properties"].pop("additional_read_properties", None)
     properties.pop("additionalProperties", None)
     return {
         "$schema": "http://json-schema.org/draft-07/schema#",
