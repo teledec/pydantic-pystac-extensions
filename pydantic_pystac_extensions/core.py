@@ -44,7 +44,7 @@ class CustomExtension(
         if isinstance(obj, pystac.Item):
             return cls(**obj.properties, allow_extra_fields=True)
         if isinstance(obj, (pystac.Asset, pystac.Collection)):
-            return cls(**obj.extra_fields)
+            return cls(**obj.extra_fields, allow_extra_fields=True)
         raise pystac.ExtensionTypeError(
             f"{cls.__name__} cannot be instantiated from type {type(obj).__name__}"
         )
