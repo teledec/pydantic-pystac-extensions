@@ -42,7 +42,7 @@ class CustomExtension(
     def from_stac_obj(cls, obj):
         """Init from a stac object."""
         if isinstance(obj, pystac.Item):
-            return cls(**obj.properties)
+            return cls(**obj.properties, allow_extra_fields=True)
         if isinstance(obj, (pystac.Asset, pystac.Collection)):
             return cls(**obj.extra_fields)
         raise pystac.ExtensionTypeError(
@@ -159,9 +159,9 @@ class CollectionCustomExtension(CustomExtension[pystac.Collection]):
 class BaseExtensionModel(BaseModel, CustomExtension):
     """Base class for extensions models."""
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
-    def __init__(self, obj: Any = None, **kwargs):
+    def __init__(self, obj: Any = None, allow_extra_fields=False, **kwargs):
         """Initializer."""
         if isinstance(obj, pystac.Item):
             props = obj.properties
@@ -177,12 +177,17 @@ class BaseExtensionModel(BaseModel, CustomExtension):
         elif isinstance(obj, (pystac.Asset, pystac.Collection)):
             self.properties = obj.extra_fields
         elif kwargs:
-            super().__init__(**kwargs)
+            if not allow_extra_fields:
+                assert all(self.is_an_ext_attribute(x) for x, y in kwargs.items()), (
+                    f"Some of the following attributes don't match with {self.__class__.__name__}:"
+                    f"{kwargs.keys()}"
+                )
             kwargs = {
                 self.get_alias_attribute_name(x): y
                 for x, y in kwargs.items()
                 if self.is_an_ext_attribute(x)
             }
+            super().__init__(**kwargs)
             self.properties = kwargs
 
     def is_an_ext_attribute(self, v: str):

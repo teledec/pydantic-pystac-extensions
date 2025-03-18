@@ -1,6 +1,8 @@
 """Tests example."""
 
 from typing import List, Final, Optional
+
+import pytest
 from pydantic import Field
 from pydantic_pystac_extensions.testing import create_dummy_item
 from pydantic_pystac_extensions import BaseExtensionModel
@@ -50,7 +52,14 @@ def test_example():
 
     item, _ = create_dummy_item()
     it_ext = MyOtherExtensionModel.ext(item, add_if_missing=True)
-    it_ext.apply(orbit=10, random_number=53)
+
+    with pytest.raises(AssertionError):
+        args = {"orbit": 10, "random_number": 53, "unwanted_arg": "Yo"}
+        it_ext.apply(**args)
+        assert False
+
+    args = {"orbit": 10, "random_number": 53}
+    it_ext.apply(**args)
 
 
 if __name__ == "__main__":
