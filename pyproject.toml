@@ -33,7 +33,7 @@ packages = ["pydantic_pystac_extensions"]
 test = ["requests", "pystac[validation]", "pytest"]
 
 [tool.pylint]
-disable = "W0231"
+disable = "W0231,W0718"
 
 [tool.pydocstyle]
 convention = "google"

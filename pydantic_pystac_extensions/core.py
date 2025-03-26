@@ -2,7 +2,7 @@
 
 from collections.abc import Iterable
 import json
-from typing import Any, Generic, TypeVar, Union
+from typing import Any, Generic, TypeVar, Union, Optional
 import pystac.asset
 from pystac.extensions.base import PropertiesExtension, ExtensionManagementMixin
 import pystac
@@ -16,7 +16,7 @@ T = TypeVar("T", pystac.Item, pystac.Asset, pystac.Collection)
 DROPPED_ATTRIBUTES_NAMES = ["properties", "additional_read_properties"]
 
 
-class CustomExtension(
+class BaseExtension(
     Generic[T],
     PropertiesExtension,
     ExtensionManagementMixin[Union[pystac.Item, pystac.Collection]],
@@ -38,18 +38,7 @@ class CustomExtension(
                 f"{self.__class__.__name__} cannot be instantiated from type {type(obj).__name__}"
             )
 
-    @classmethod
-    def from_stac_obj(cls, obj):
-        """Init from a stac object."""
-        if isinstance(obj, pystac.Item):
-            return cls(**obj.properties, allow_extra_fields=True)
-        if isinstance(obj, (pystac.Asset, pystac.Collection)):
-            return cls(**obj.extra_fields, allow_extra_fields=True)
-        raise pystac.ExtensionTypeError(
-            f"{cls.__name__} cannot be instantiated from type {type(obj).__name__}"
-        )
-
-    def apply(self, md: "BaseExtensionModel" = None, **kwargs):  # type: ignore
+    def apply(self, md: Optional["BaseExtensionModel"] = None, **kwargs):
         """Apply the metadata."""
         if md is None and not kwargs:
             raise ValueError("At least `md` or kwargs is required")
@@ -59,7 +48,7 @@ class CustomExtension(
 
         # Set properties
         md = md or self.extension_cls(**kwargs)
-        for key, value in md.model_dump(exclude_unset=True).items():
+        for key, value in md.model_dump(exclude_unset=False).items():
             if key in DROPPED_ATTRIBUTES_NAMES:
                 continue
             alias = md.model_fields[key].alias or key
@@ -125,11 +114,11 @@ class CustomExtension(
         )
 
 
-class ItemCustomExtension(CustomExtension[pystac.Item]):
+class ItemCustomExtension(BaseExtension[pystac.Item]):
     """Item custom extension."""
 
 
-class AssetCustomExtension(CustomExtension[pystac.Asset]):
+class AssetCustomExtension(BaseExtension[pystac.Asset]):
     """Asset custom extension."""
 
     asset_href: str
@@ -145,7 +134,7 @@ class AssetCustomExtension(CustomExtension[pystac.Asset]):
         self.extension_cls = extension_cls
 
 
-class CollectionCustomExtension(CustomExtension[pystac.Collection]):
+class CollectionCustomExtension(BaseExtension[pystac.Collection]):
     """Collection curstom extension."""
 
     properties: dict[str, Any]
@@ -156,7 +145,7 @@ class CollectionCustomExtension(CustomExtension[pystac.Collection]):
         self.extension_cls = extension_cls
 
 
-class BaseExtensionModel(BaseModel, CustomExtension):
+class BaseExtensionModel(BaseModel, BaseExtension):
     """Base class for extensions models."""
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
@@ -164,23 +153,15 @@ class BaseExtensionModel(BaseModel, CustomExtension):
     def __init__(self, obj: Any = None, allow_extra_fields=False, **kwargs):
         """Initializer."""
         if isinstance(obj, pystac.Item):
-            props = obj.properties
-            props = {p: v for p, v in props.items() if v is not None}
-            props = {
-                key: props.get(info.alias, key)
-                for key, info in self.model_fields.items()
-                if info.alias
-            }
-            for x, y in props.items():
-                self.properties[x] = y
-                setattr(self, x, y)
+            self.fill_attrs(obj)
         elif isinstance(obj, (pystac.Asset, pystac.Collection)):
-            self.properties = obj.extra_fields
+            self.fill_attrs(obj)
         elif kwargs:
             if not allow_extra_fields:
                 assert all(self.is_an_ext_attribute(x) for x, y in kwargs.items()), (
-                    f"Some of the following attributes don't match with {self.__class__.__name__}:"
-                    f"{kwargs.keys()}"
+                    "Some of the following attributes don't match with"
+                    f"{self.__class__.__name__} attributes: "
+                    f"{', '.join(kwargs.keys())}"
                 )
             kwargs = {
                 self.get_alias_attribute_name(x): y
@@ -190,25 +171,48 @@ class BaseExtensionModel(BaseModel, CustomExtension):
             super().__init__(**kwargs)
             self.properties = kwargs
 
-    def is_an_ext_attribute(self, v: str):
+    def fill_attrs(self, obj: pystac.Item | pystac.Asset | pystac.Collection):
+        """Fill attributes when initializing from a Stac object.."""
+        if isinstance(obj, pystac.Item):
+            props = obj.properties
+        elif isinstance(obj, (pystac.Asset, pystac.Collection)):
+            props = obj.extra_fields
+        else:
+            raise pystac.ExtensionTypeError(
+                f"{self.__class__.__name__} cannot be instantiated from type {type(obj).__name__}"
+            )
+        props = {p: v for p, v in props.items() if v is not None}
+        props = {
+            key: props.get(info.alias, info.default)
+            for key, info in self.model_fields.items()
+            if info.alias
+        }
+        for x, y in props.items():
+            self.properties[x] = y
+            try:
+                setattr(self, x, y)
+            except AttributeError:
+                pass
+
+    def is_an_ext_attribute(self, key: str):
         """Checks if a string is an attribute."""
-        if v in DROPPED_ATTRIBUTES_NAMES:
+        if key in DROPPED_ATTRIBUTES_NAMES:
             return False
-        if v in self.model_fields:
+        if key in self.model_fields:
             return True
 
         def get_alias(x):
             return x.alias
 
-        if v in list(map(get_alias, self.model_fields.values())):
+        if key in list(map(get_alias, self.model_fields.values())):
             return True
         return False
 
-    def get_alias_attribute_name(self, v: str):
+    def get_alias_attribute_name(self, key: str):
         """Transforms attribute names to aliases when provided."""
         for k, field in self.model_fields.items():
-            if field.alias == v:
+            if field.alias == key:
                 return field.alias
-            if k == v:
+            if k == key:
                 return field.alias
         raise ValueError

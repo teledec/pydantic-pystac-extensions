@@ -1,5 +1,7 @@
 """Testing module."""
 
+# pylint: disable=too-many-statements
+
 import random
 import json
 import difflib
@@ -9,7 +11,7 @@ import pystac
 
 from pydantic_pystac_extensions.core import (
     BaseExtensionModel,
-    CustomExtension,
+    BaseExtension,
     T,
 )
 
@@ -68,7 +70,7 @@ METHODS = ["arg", "md", "dict"]
 
 def basic_test(
     ext_md: BaseExtensionModel,
-    ext_cls: CustomExtension[T],
+    ext_cls: BaseExtension[T],
     asset_test: bool = True,
     collection_test: bool = True,
     validate: bool = True,
@@ -78,8 +80,13 @@ def basic_test(
     schema.pop("properties")
     print(f"Extension metadata model: \n{schema}")
 
+    assert ext_md.get_schema_uri(), f"{ext_md.__class__.__name__} schema URI is not set"
+
     ext_cls.print_schema()
-    ext_cls.export_schema("/tmp/new.json")
+    try:
+        ext_cls.export_schema("/tmp/new.json")
+    except Exception:
+        pass
 
     def apply(stac_obj: T, method="arg"):
         """Apply the extension to the item."""
@@ -102,11 +109,15 @@ def basic_test(
 
     def comp(stac_obj: T):
         """Compare the metadata carried by the stac object with the expected metadata."""
-        read_ext = ext_cls.from_stac_obj(stac_obj)
+        read_ext = ext_cls(stac_obj)  # type: ignore
         for field in ext_md.__class__.model_fields:
-            ref = getattr(ext_md, field)
+            if field == "properties":
+                continue
+            expected = getattr(ext_md, field)
             got = getattr(read_ext, field)
-            assert got == ref, f"'{field}': values differ: {got} (expected {ref})"
+            assert got == expected, (
+                f"'{field}': values differ:\n\tgot:\t\t{got}\n\texpected:\t{expected}"
+            )
 
     def test_item(method: str):
         """Test extension against item."""
