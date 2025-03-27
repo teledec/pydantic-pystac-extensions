@@ -3,10 +3,9 @@
 from typing import List, Final, Optional
 
 import pytest
-from pydantic import Field
-from pydantic_pystac_extensions.testing import create_dummy_item
-from pydantic_pystac_extensions import BaseExtensionModel
-from pydantic_pystac_extensions.testing import basic_test
+from pydantic import Field, BaseModel
+from pydantic_pystac_extensions.testing import create_dummy_item, basic_test
+from pydantic_pystac_extensions import BaseExtension
 
 # Extension parameters
 SCHEMA_URI: Final = "https://example.com/image-process/v1.0.0/schema.json"
@@ -22,7 +21,7 @@ RANDOM_NUMBER: Final = OTHER_PREFIX + "random_number"
 OPTIONAL_NUMBER: Final = OTHER_PREFIX + "opt_number"
 
 
-class MyExtensionModel(BaseExtensionModel):
+class MyExtensionWAlias(BaseExtension):
     """Extension metadata model example."""
 
     __schema_uri__ = SCHEMA_URI
@@ -34,7 +33,17 @@ class MyExtensionModel(BaseExtensionModel):
     )
 
 
-class MyOtherExtensionModel(BaseExtensionModel):
+class MyExtensionWOAlias(BaseExtension):
+    """Extension metadata model example."""
+
+    __schema_uri__ = SCHEMA_URI
+    name: str
+    authors: List[str]
+    version: str
+    opt_field: Optional[str] = None
+
+
+class MyOtherExtension(BaseExtension):
     """Extension metadata model example."""
 
     __schema_uri__ = SCHEMA_URI + "/other_link_extension"
@@ -45,16 +54,35 @@ class MyOtherExtensionModel(BaseExtensionModel):
     )
 
 
+class Stuff(BaseModel):
+    """Some stuff."""
+
+    j: int
+
+
+class MyExt(BaseExtension):
+    """Some extension having two Stuff member, one without alias."""
+
+    __schema_uri__ = SCHEMA_URI
+    stuff: Stuff = Field(alias="my:stuff")
+    other_stuff: Stuff
+
+
 def test_basic():
     """Use basic test."""
-    ext_md = MyExtensionModel(name="test", authors=["michel", "denis"], version="alpha")
-    basic_test(ext_md, MyExtensionModel, validate=False)
+    md = {"name": "test", "authors": ["michel", "denis"], "version": "alpha"}
+
+    print("Test with alias")
+    basic_test(ext_cls=MyExtensionWAlias, validate=False, ext_md=md)
+
+    print("Test without alias")
+    basic_test(ext_cls=MyExtensionWOAlias, validate=False, ext_md=md)
 
 
 def test_custom():
     """Syntaxic and functional tests."""
     item, _ = create_dummy_item()
-    it_ext = MyOtherExtensionModel.ext(item, add_if_missing=True)
+    it_ext = MyOtherExtension.ext(item, add_if_missing=True)
     with pytest.raises(AssertionError):
         args = {"orbit": 10, "random_number": 53, "unwanted_arg": "Yo"}
         it_ext.apply(**args)
@@ -74,7 +102,7 @@ def test_custom():
     }
     assert item.properties == expected, f"Expected {expected}, got {item.properties}"
 
-    mem = MyOtherExtensionModel(item)
+    mem = MyOtherExtension(item)
     assert mem.orbit == 10
 
 
@@ -82,8 +110,8 @@ def test_several_extensions():
     """Test several extensions applied."""
     item, _ = create_dummy_item()
 
-    ext_md = MyExtensionModel.ext(item, add_if_missing=True)
-    oext_md = MyOtherExtensionModel.ext(item, add_if_missing=True)
+    ext_md = MyExtensionWAlias.ext(item, add_if_missing=True)
+    oext_md = MyOtherExtension.ext(item, add_if_missing=True)
 
     args = {"name": "I'm me", "authors": ["Me", "Me again"], "version": "42.0"}
     ext_md.apply(**args)
@@ -100,7 +128,24 @@ def test_several_extensions():
     assert item.properties == expected, f"Expected {expected}, got {item.properties}"
 
 
+def test_nested_objects():
+    """Test extension that ships members of type BaseModel."""
+    item, _ = create_dummy_item()
+
+    ext = MyExt.ext(item, add_if_missing=True)
+    s = Stuff(j=3)
+    o = Stuff(j=4)
+    ext.apply(stuff=s, other_stuff=o)
+
+    retrieved_stuff = MyExt(item).stuff
+    assert isinstance(retrieved_stuff, Stuff)
+    assert retrieved_stuff.j == s.j
+    other_retrieved_stuff = MyExt(item).other_stuff
+    assert other_retrieved_stuff.j == o.j
+
+
 if __name__ == "__main__":
     test_basic()
     test_custom()
     test_several_extensions()
+    test_nested_objects()

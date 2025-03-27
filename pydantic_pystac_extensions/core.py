@@ -16,7 +16,7 @@ T = TypeVar("T", pystac.Item, pystac.Asset, pystac.Collection)
 DROPPED_ATTRIBUTES_NAMES = ["properties", "additional_read_properties"]
 
 
-class BaseExtension(
+class PystacExtensionAdapter(
     Generic[T],
     PropertiesExtension,
     ExtensionManagementMixin[Union[pystac.Item, pystac.Collection]],
@@ -38,7 +38,7 @@ class BaseExtension(
                 f"{self.__class__.__name__} cannot be instantiated from type {type(obj).__name__}"
             )
 
-    def apply(self, md: Optional["BaseExtensionModel"] = None, **kwargs):
+    def apply(self, md: Optional["BaseExtension"] = None, **kwargs):
         """Apply the metadata."""
         if md is None and not kwargs:
             raise ValueError("At least `md` or kwargs is required")
@@ -68,7 +68,7 @@ class BaseExtension(
     @classmethod
     def get_schema(cls) -> dict:
         """Get schema as dict."""
-        assert issubclass(cls, BaseExtensionModel)
+        assert issubclass(cls, BaseExtension)
         return generate_schema(
             model_cls=cls,
             title=f"STAC extension from {cls.__name__} model",
@@ -114,11 +114,11 @@ class BaseExtension(
         )
 
 
-class ItemCustomExtension(BaseExtension[pystac.Item]):
+class ItemCustomExtension(PystacExtensionAdapter[pystac.Item]):
     """Item custom extension."""
 
 
-class AssetCustomExtension(BaseExtension[pystac.Asset]):
+class AssetCustomExtension(PystacExtensionAdapter[pystac.Asset]):
     """Asset custom extension."""
 
     asset_href: str
@@ -134,7 +134,7 @@ class AssetCustomExtension(BaseExtension[pystac.Asset]):
         self.extension_cls = extension_cls
 
 
-class CollectionCustomExtension(BaseExtension[pystac.Collection]):
+class CollectionCustomExtension(PystacExtensionAdapter[pystac.Collection]):
     """Collection curstom extension."""
 
     properties: dict[str, Any]
@@ -145,74 +145,41 @@ class CollectionCustomExtension(BaseExtension[pystac.Collection]):
         self.extension_cls = extension_cls
 
 
-class BaseExtensionModel(BaseModel, BaseExtension):
+class BaseExtension(BaseModel, PystacExtensionAdapter):
     """Base class for extensions models."""
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
-    def __init__(self, obj: Any = None, allow_extra_fields=False, **kwargs):
+    def __init__(self, obj: Any = None, **kwargs):
         """Initializer."""
-        if isinstance(obj, pystac.Item):
-            self.fill_attrs(obj)
-        elif isinstance(obj, (pystac.Asset, pystac.Collection)):
-            self.fill_attrs(obj)
-        elif kwargs:
-            if not allow_extra_fields:
-                assert all(self.is_an_ext_attribute(x) for x, y in kwargs.items()), (
-                    "Some of the following attributes don't match with"
-                    f"{self.__class__.__name__} attributes: "
-                    f"{', '.join(kwargs.keys())}"
-                )
-            kwargs = {
-                self.get_alias_attribute_name(x): y
-                for x, y in kwargs.items()
-                if self.is_an_ext_attribute(x)
-            }
-            super().__init__(**kwargs)
-            self.properties = kwargs
+        if isinstance(obj, (pystac.Asset, pystac.Item, pystac.Collection)):
+            # Read properties from stac object
+            props = obj.properties if isinstance(obj, pystac.Item) else obj.extra_fields
 
-    def fill_attrs(self, obj: pystac.Item | pystac.Asset | pystac.Collection):
-        """Fill attributes when initializing from a Stac object.."""
-        if isinstance(obj, pystac.Item):
-            props = obj.properties
-        elif isinstance(obj, (pystac.Asset, pystac.Collection)):
-            props = obj.extra_fields
-        else:
+            # Keep only properties matching the extension model
+            props = {
+                key: value
+                for key, info in self.model_fields.items()
+                if (
+                    value := (
+                        props.get(info.alias or "") or props.get(key, info.default)
+                    )
+                )
+            }
+        elif obj:
             raise pystac.ExtensionTypeError(
                 f"{self.__class__.__name__} cannot be instantiated from type {type(obj).__name__}"
             )
-        props = {p: v for p, v in props.items() if v is not None}
-        props = {
-            key: props.get(info.alias, info.default)
-            for key, info in self.model_fields.items()
-            if info.alias
-        }
-        for x, y in props.items():
-            self.properties[x] = y
-            try:
-                setattr(self, x, y)
-            except AttributeError:
-                pass
-
-    def is_an_ext_attribute(self, key: str):
-        """Checks if a string is an attribute."""
-        if key in DROPPED_ATTRIBUTES_NAMES:
-            return False
-        if key in self.model_fields:
-            return True
-
-        def get_alias(x):
-            return x.alias
-
-        if key in list(map(get_alias, self.model_fields.values())):
-            return True
-        return False
-
-    def get_alias_attribute_name(self, key: str):
-        """Transforms attribute names to aliases when provided."""
-        for k, field in self.model_fields.items():
-            if field.alias == key:
-                return field.alias
-            if k == key:
-                return field.alias
-        raise ValueError
+        elif kwargs:
+            # Read properties from kwargs, and keep only the ones matching
+            # the extension model and which are not builtins
+            aliases = [field.alias for field in self.model_fields.values()]
+            props = {
+                name: value
+                for name, value in kwargs.items()
+                if name in self.model_fields
+                or name in aliases
+                and name not in DROPPED_ATTRIBUTES_NAMES
+            }
+        super().__init__(**props)
+        self.properties = props

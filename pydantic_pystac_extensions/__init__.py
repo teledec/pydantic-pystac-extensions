@@ -2,7 +2,7 @@
 
 from importlib.metadata import version, PackageNotFoundError
 
-from .core import BaseExtensionModel  # noqa
+from .core import BaseExtension  # noqa
 
 
 try:

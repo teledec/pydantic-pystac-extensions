@@ -1,7 +1,5 @@
 """Testing module."""
 
-# pylint: disable=too-many-statements
-
 import random
 import json
 import difflib
@@ -9,11 +7,7 @@ from datetime import datetime
 import requests
 import pystac
 
-from pydantic_pystac_extensions.core import (
-    BaseExtensionModel,
-    BaseExtension,
-    T,
-)
+from pydantic_pystac_extensions.core import BaseExtension, T, DROPPED_ATTRIBUTES_NAMES
 
 
 def create_dummy_item(date: datetime | None = None):
@@ -65,22 +59,21 @@ def create_dummy_item(date: datetime | None = None):
     return item, col
 
 
-METHODS = ["arg", "md", "dict"]
-
-
-def basic_test(
-    ext_md: BaseExtensionModel,
-    ext_cls: BaseExtension[T],
+def basic_test(  # pylint: disable = too-many-arguments, too-many-positional-arguments
+    ext_md: dict,
+    ext_cls: BaseExtension,
+    item_test: bool = True,
     asset_test: bool = True,
     collection_test: bool = True,
     validate: bool = True,
-):
+):  # pylint: disable=too-many-statements,too-many-arguments,too-many-positional-arguments
     """Perform the basic testing of the extension class."""
-    schema = ext_md.__class__.model_json_schema()
-    schema.pop("properties")
+    schema = ext_cls.model_json_schema()
     print(f"Extension metadata model: \n{schema}")
 
-    assert ext_md.get_schema_uri(), f"{ext_md.__class__.__name__} schema URI is not set"
+    assert ext_cls.get_schema_uri(), (
+        f"{ext_md.__class__.__name__} schema URI is not set"
+    )
 
     ext_cls.print_schema()
     try:
@@ -88,20 +81,11 @@ def basic_test(
     except Exception:
         pass
 
-    def apply(stac_obj: T, method="arg"):
+    def apply(stac_obj: T):
         """Apply the extension to the item."""
         print(f"Check extension applied to {stac_obj.__class__.__name__}")
         ext = ext_cls.ext(stac_obj, add_if_missing=True)
-        if method == "arg":
-            ext.apply(ext_md)
-        elif method == "md":
-            ext.apply(md=ext_md)
-        elif method == "dict":
-            d = {name: getattr(ext_md, name) for name in ext_md.model_fields}
-            d.pop("properties")
-            d.pop("additional_read_properties")
-            print(f"Passing kwargs: {d}")
-            ext.apply(**d)
+        ext.apply(**ext_md)
 
     def print_stac_obj(stac_obj: T):
         """Print item as JSON."""
@@ -110,55 +94,62 @@ def basic_test(
     def comp(stac_obj: T):
         """Compare the metadata carried by the stac object with the expected metadata."""
         read_ext = ext_cls(stac_obj)  # type: ignore
-        for field in ext_md.__class__.model_fields:
-            if field == "properties":
+        member = "properties" if isinstance(stac_obj, pystac.Item) else "extra_fields"
+        props = getattr(stac_obj, member)
+        for field_name, field in ext_cls.model_fields.items():
+            if field_name in DROPPED_ATTRIBUTES_NAMES:
                 continue
-            expected = getattr(ext_md, field)
-            got = getattr(read_ext, field)
+            expected = ext_md.get(field_name)
+            if expected:
+                assert field.alias or field_name in props, (
+                    f"{field.alias} or {field_name} not in {props}"
+                )
+
+            got = getattr(read_ext, field_name)
             assert got == expected, (
-                f"'{field}': values differ:\n\tgot:\t\t{got}\n\texpected:\t{expected}"
+                f"'{field_name}': values differ:\n\tgot:\t\t{got}\n\texpected:\t{expected}"
             )
 
-    def test_item(method: str):
+    def test_item():
         """Test extension against item."""
         item, _ = create_dummy_item()
-        apply(item, method)
+        apply(item)
         print_stac_obj(item)
         if validate:
             item.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the item
         comp(item)
 
-    def test_asset(method: str):
+    def test_asset():
         """Test extension against asset."""
         item, _ = create_dummy_item()
-        apply(item.assets["ndvi"], method)
+        apply(item.assets["ndvi"])
         print_stac_obj(item)
         if validate:
             item.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the asset
         comp(item.assets["ndvi"])
 
-    def test_collection(method: str):
+    def test_collection():
         """Test extension against collection."""
         _, col = create_dummy_item()
         print_stac_obj(col)
-        apply(col, method)
+        apply(col)
         print_stac_obj(col)
         if validate:
             col.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the asset
         comp(col)
 
-    for method in METHODS:
-        print(f"Test item with {method} args passing strategy")
-        test_item(method)
-        if asset_test:
-            print(f"Test asset with {method} args passing strategy")
-            test_asset(method)
-        if collection_test:
-            print(f"Test collection with {method} args passing strategy")
-            test_collection(method)
+    if item_test:
+        print("Test item")
+        test_item()
+    if asset_test:
+        print("Test asset")
+        test_asset()
+    if collection_test:
+        print("Test collection")
+        test_collection()
 
 
 def is_schema_url_synced(cls):
