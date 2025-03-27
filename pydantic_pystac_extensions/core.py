@@ -46,8 +46,10 @@ class PystacExtensionAdapter(
         if md and kwargs:
             raise ValueError("You must use either `md` or kwargs")
 
-        # Set properties
         md = md or self.extension_cls(**kwargs)
+        if kwargs:
+            assert all(md.is_an_ext_attribute(k) for k in kwargs)
+        # Set properties
         for key, value in md.model_dump(exclude_unset=False).items():
             if key in DROPPED_ATTRIBUTES_NAMES:
                 continue
@@ -183,3 +185,17 @@ class BaseExtension(BaseModel, PystacExtensionAdapter):
             }
         super().__init__(**props)
         self.properties = props
+
+    def is_an_ext_attribute(self, v: str):
+        """Checks if a string is an attribute."""
+        if v in DROPPED_ATTRIBUTES_NAMES:
+            return False
+        if v in self.model_fields:
+            return True
+
+        def get_alias(x):
+            return x.alias
+
+        if v in list(map(get_alias, self.model_fields.values())):
+            return True
+        return False

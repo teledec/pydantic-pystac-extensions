@@ -1,5 +1,6 @@
 """Tests example."""
 
+import sys
 from typing import List, Final, Optional
 
 import pytest
@@ -84,9 +85,9 @@ def test_custom():
     item, _ = create_dummy_item()
     it_ext = MyOtherExtension.ext(item, add_if_missing=True)
     with pytest.raises(AssertionError):
-        args = {"orbit": 10, "random_number": 53, "unwanted_arg": "Yo"}
+        args = {"orbit": 10, "other_prefix:random_number": 53, "unwanted_arg": "Yo"}
         it_ext.apply(**args)
-        assert False
+        sys.exit(3)
 
     args = {"orbit": 53}
     it_ext.apply(**args)
