@@ -6,7 +6,6 @@ pydantic models.
 ## Installation
 
 ```
-PIP_EXTRA_INDEX_URL=https://forgemia.inra.fr/api/v4/projects/14431/packages/pypi/simple
 pip install pydantic-pystac-extensions
 ```
 
@@ -20,7 +19,7 @@ from pydantic_pystac_extensions import BaseExtension
 from typing import List
 
 class MyExtension(BaseExtension):
-    """My extension bla, bla"""
+    """My extension description here."""
     
     __schema_uri__ = "https://example.com/blabla/v1.0.0/schema.json"
     name: str = Field(title="The name", alias="namespace:name")
@@ -29,21 +28,12 @@ class MyExtension(BaseExtension):
 
 ### Apply the extension to STAC objects
 
-STAC Item:
+Extension can be applied to `pystac.Item`, `pystac.Asset` or `pystac.Collection`
 
 ```python
 item = ... # some `pystac.Item`
 processing_ext = MyExtension.ext(item, add_if_missing=True)
 processing_ext.apply(name="thing", authors=["sylvie", "andre"])
-```
-
-STAC Asset:
-
-```python
-# Apply extension to STAC asset
-asset = ... # some `pystac.Asset`
-processing_ext = MyExtension.ext(asset, add_if_missing=True)
-processing_ext.apply(ext_md)
 ```
 
 ### Metadata retrieval from STAC objects
