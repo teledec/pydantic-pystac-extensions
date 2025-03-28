@@ -23,4 +23,16 @@ Tests:
   allow_failure: false
   script:
     - if [ ! -d "tests" ]; then echo "Directory `tests` not found in the repository. Please use `tests` directory to implement unit/functional tests!"; exit 1; fi
-    - pytest --junitxml=report.xml -s
+    - coverage run -m pytest --junitxml=report.xml -s
+    - coverage report
+    - coverage xml
+    - coverage html
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    paths:
+      - htmlcov/
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml

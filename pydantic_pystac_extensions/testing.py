@@ -76,10 +76,7 @@ def basic_test(  # pylint: disable = too-many-arguments, too-many-positional-arg
     )
 
     ext_cls.print_schema()
-    try:
-        ext_cls.export_schema("/tmp/new.json")
-    except Exception:
-        pass
+    ext_cls.export_schema("/tmp/new.json")
 
     def apply(stac_obj: T):
         """Apply the extension to the item."""

@@ -31,7 +31,7 @@ build-backend = "setuptools.build_meta"
 packages = ["pydantic_pystac_extensions"]
 
 [project.optional-dependencies]
-test = ["requests", "pystac[validation]", "pytest", "pylint-pydantic"]
+test = ["requests", "pystac[validation]", "pytest", "pylint-pydantic", "coverage"]
 
 [tool.pylint]
 disable = "W0231,W0718"

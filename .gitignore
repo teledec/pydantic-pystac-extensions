@@ -5,3 +5,5 @@ build/
 .mypy_cache
 .vscode/
 *venv/
+.coverage
+*.xml
