@@ -6,7 +6,6 @@ include:
       - ".gitlab/ci/pip.yml"
 
 variables:
-  PIP_EXTRA_INDEX_URL: https://forgemia.inra.fr/api/v4/projects/14431/packages/pypi/simple
   PACKAGE_INSTALL_EXTRAS: "[test]"
 
 stages:
