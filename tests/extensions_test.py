@@ -41,6 +41,14 @@ class MyExtensionWAlias(BaseExtension):
     )
 
 
+class ExtWithDict(BaseExtension):
+    """Extension metadata model example."""
+
+    __schema_uri__ = SCHEMA_URI
+    data: dict
+    fdata: dict = Field(alias="ns:fdata")
+
+
 class MyExtensionWOAlias(BaseExtension):
     """Extension metadata model example."""
 
@@ -211,6 +219,11 @@ def test_init_incorrect():
         MyExt(s)
     except pystac.ExtensionTypeError:
         pass
+
+
+def test_empty_dict_as_member():
+    """Test an extension which has an empty dict as member value."""
+    basic_test(ext_cls=ExtWithDict, ext_md={"data": {}, "fdata": {}}, validate=False)
 
 
 if __name__ == "__main__":

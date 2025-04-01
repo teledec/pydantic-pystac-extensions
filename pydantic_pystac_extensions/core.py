@@ -51,7 +51,7 @@ class PystacExtensionAdapter(
         for key, value in md.model_dump(exclude_unset=False).items():
             if key in DROPPED_ATTRIBUTES_NAMES:
                 continue
-            alias = md.model_fields[key].alias or key
+            alias = md.__class__.model_fields[key].alias or key
             if value is not None:
                 self._set_property(alias, value, pop_if_none=False)
 
@@ -141,12 +141,8 @@ class BaseExtension(BaseModel, PystacExtensionAdapter):
             # Keep only properties matching the extension model
             kwargs = {
                 key: value
-                for key, info in self.model_fields.items()
-                if (
-                    value := (
-                        props.get(info.alias or "") or props.get(key, info.default)
-                    )
-                )
+                for key, info in self.__class__.model_fields.items()
+                if (value := props.get(info.alias or key)) is not None
             }
         elif obj:
             raise pystac.ExtensionTypeError(
