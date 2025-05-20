@@ -108,6 +108,10 @@ class PystacExtensionAdapter(
             f"{cls.__name__} does not apply to type {type(obj).__name__}"
         )
 
+    def to_dict(self) -> dict[str, Any]:
+        """Return the extension properties as a dictionary."""
+        return self.properties
+
 
 class ItemCustomExtension(PystacExtensionAdapter[pystac.Item]):
     """Item custom extension."""
