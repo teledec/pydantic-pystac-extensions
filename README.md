@@ -39,7 +39,7 @@ class MyExtension(BaseExtension):
     """My extension description here."""
 
     __schema_uri__ = (
-        "https://forgemia.inra.fr/umr-tetis/stac/extensions/schemas/-/"
+        "https://forgemia.inra.fr/teledec/stac-extensions/schemas/-/"
         "raw/main/example/v1.1.0/schema.json?ref_type=heads"
     )
 

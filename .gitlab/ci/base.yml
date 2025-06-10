@@ -1,5 +1,5 @@
 include:
-  - project: "cdos-pub/pycode-quality"
+  - project: "teledec/pycode-quality"
     ref: "main"
     file:
       - ".gitlab/ci/static-analysis.yml"

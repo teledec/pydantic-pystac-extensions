@@ -14,7 +14,7 @@ class MyExtension(BaseExtension):
     """Extension metadata model."""
 
     __schema_uri__ = (
-        "https://forgemia.inra.fr/umr-tetis/stac/extensions/schemas/-/"
+        "https://forge.inrae.fr/teledec/stac-extensions/schemas/-/"
         "raw/main/example/v1.1.0/schema.json?ref_type=heads"
     )
 
