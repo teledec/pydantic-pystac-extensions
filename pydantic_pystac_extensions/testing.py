@@ -116,6 +116,7 @@ def basic_test(  # pylint: disable = too-many-arguments, too-many-positional-arg
             item.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the item
         comp(item)
+        assert ext_cls.has_extension(item)
 
     def test_asset():
         """Test extension against asset."""
@@ -126,6 +127,7 @@ def basic_test(  # pylint: disable = too-many-arguments, too-many-positional-arg
             item.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the asset
         comp(item.assets["ndvi"])
+        # Note that we don't use has_extension() because it does not apply to assets
 
     def test_collection():
         """Test extension against collection."""
@@ -137,6 +139,7 @@ def basic_test(  # pylint: disable = too-many-arguments, too-many-positional-arg
             col.validate()  # <--- This will try to read the actual schema URI
         # Check that we can retrieve the extension metadata from the asset
         comp(col)
+        assert ext_cls.has_extension(col)
 
     if item_test:
         print("Test item")
