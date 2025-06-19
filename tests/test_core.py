@@ -18,7 +18,7 @@ from tests.utils import should_fail
 # Extension parameters
 SCHEMA_URI: Final = "https://stac-extensions.github.io/sentinel-2/v1.0.0/schema.json"
 PREFIX: Final = "some_prefix:"
-NAME: Final = PREFIX + "name"
+NAME: Final = PREFIX + "name_custom"
 AUTHORS: Final = PREFIX + "authors"
 VERSION: Final = PREFIX + "version"
 OPT_FIELD: Final = PREFIX + "opt_field"
@@ -33,7 +33,7 @@ class MyExtensionWAlias(BaseExtension):
     """Extension metadata model example."""
 
     __schema_uri__ = SCHEMA_URI
-    name: str = Field(title="Process name", alias=NAME)
+    name_custom: str = Field(title="Process name", alias=NAME)
     authors: List[str] = Field(title="Authors", alias=AUTHORS)
     version: str = Field(title="Process version", alias=VERSION)
     opt_field: Optional[str] = Field(
@@ -53,7 +53,7 @@ class MyExtensionWOAlias(BaseExtension):
     """Extension metadata model example."""
 
     __schema_uri__ = SCHEMA_URI
-    name: str
+    name_custom: str
     authors: List[str]
     version: str
     opt_field: Optional[str] = None
@@ -86,7 +86,7 @@ class MyExt(BaseExtension):
 
 def test_basic():
     """Use basic test."""
-    md = {"name": "test", "authors": ["michel", "denis"], "version": "alpha"}
+    md = {"name_custom": "test", "authors": ["michel", "denis"], "version": "alpha"}
 
     print("Test with alias")
     basic_test(ext_cls=MyExtensionWAlias, validate=False, ext_md=md)
@@ -133,13 +133,13 @@ def test_several_extensions():
     ext_md = MyExtensionWAlias.ext(item, add_if_missing=True)
     oext_md = MyOtherExtension.ext(item, add_if_missing=True)
 
-    args = {"name": "I'm me", "authors": ["Me", "Me again"], "version": "42.0"}
+    args = {"name_custom": "I'm me", "authors": ["Me", "Me again"], "version": "42.0"}
     ext_md.apply(**args)
     args = {"orbit": 53}
     oext_md.apply(**args)
 
     expected = {
-        "some_prefix:name": "I'm me",
+        "some_prefix:name_custom": "I'm me",
         "some_prefix:authors": ["Me", "Me again"],
         "some_prefix:version": "42.0",
         "other_prefix:orbit": 53,
@@ -166,7 +166,7 @@ def test_nested_objects():
 
 def test_validate_incorrect_uri():
     """Test extension that ships members of type BaseModel."""
-    md = {"name": "test", "authors": ["michel", "denis"], "version": "alpha"}
+    md = {"name_custom": "test", "authors": ["michel", "denis"], "version": "alpha"}
     should_fail(
         basic_test,
         {"ext_cls": MyExtensionWAlias, "validate": True, "ext_md": md},
@@ -212,6 +212,9 @@ def test_init_incorrect():
     """Test extension that ships members of type BaseModel."""
     s = Stuff(j=3)
     args = {"stuff": s}
+    should_fail(MyExt, args, exception_cls=ValueError)
+
+    args = {"md": s, "a": 3}
     should_fail(MyExt, args, exception_cls=ValueError)
 
     args = [1]

@@ -40,7 +40,7 @@ class MyExtension(BaseExtension):
 
     __schema_uri__ = (
         "https://forgemia.inra.fr/teledec/stac-extensions/schemas/-/"
-        "raw/main/example/v1.1.0/schema.json?ref_type=heads"
+        "raw/main/example/v1.2.0/schema.json"
     )
 
     name: str = Field(title="The name", alias="namespace:name")

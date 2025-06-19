@@ -15,10 +15,11 @@ class MyExtension(BaseExtension):
 
     __schema_uri__ = (
         "https://forge.inrae.fr/teledec/stac-extensions/schemas/-/"
-        "raw/main/example/v1.1.0/schema.json?ref_type=heads"
+        "raw/main/example/v1.2.0/schema.json"
     )
+    __name_prefix__ = "prefix"
 
-    name: str = Field(title="Process name", alias="prefix:name")
+    name_custom: str = Field(title="Process name", alias="prefix:name_custom")
     authors: List[str] = Field(title="Authors", alias="prefix:authors")
     version: str = Field(title="Process version", alias="prefix:version")
 
@@ -35,7 +36,7 @@ item = pystac.Item(
 )
 MyExtension.has_extension(item)  # False
 processing_ext = MyExtension.ext(item, add_if_missing=True)
-processing_ext.apply(name="thing", authors=["sylvie", "andre"], version="1.0.0")
+processing_ext.apply(name_custom="thing", authors=["sylvie", "andre"], version="1.0.0")
 uri = processing_ext.get_schema_uri()
 assert len(uri) > 2
 
@@ -45,3 +46,5 @@ MyExtension.has_extension(item)  # True
 my_ext = MyExtension(item)  # type: ignore
 print(my_ext.to_dict())
 print(my_ext.authors)
+
+print(MyExtension.name)

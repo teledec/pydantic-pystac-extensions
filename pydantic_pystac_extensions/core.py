@@ -16,6 +16,14 @@ T = TypeVar("T", pystac.Item, pystac.Asset, pystac.Collection)
 DROPPED_ATTRIBUTES_NAMES = ["properties", "additional_read_properties"]
 
 
+class ClassProperty(property):
+    """Class property definition."""
+
+    def __get__(self, obj, cls):
+        """Getter for class property."""
+        return self.fget(cls)
+
+
 class PystacExtensionAdapter(
     Generic[T],
     PropertiesExtension,
@@ -25,10 +33,12 @@ class PystacExtensionAdapter(
 
     properties: dict[str, Any] = {}
     __schema_uri__: str = ""
+    __name_prefix__: str = ""
 
     def __init__(self, obj: T, extension_cls: Any = None):
         """Initializer."""
         self.extension_cls = extension_cls
+        self.__name_prefix__ = extension_cls.__name_prefix__
         self.__class__.__name__ = (
             f"{obj.__class__.__name__}{self.extension_cls.__name__}"
         )
@@ -36,6 +46,14 @@ class PystacExtensionAdapter(
             self.properties = obj.properties
         elif isinstance(obj, (pystac.Asset, pystac.Collection)):
             self.properties = obj.extra_fields
+
+    @ClassProperty
+    def name(cls):  # type: ignore # pylint: disable=no-self-argument
+        """Fetch name of the extension.
+
+        Example: Extension EOExtension name is 'eo'.
+        """
+        return cls.__name_prefix__
 
     def apply(self, md: Optional["BaseExtension"] = None, **kwargs):
         """Apply the metadata."""
