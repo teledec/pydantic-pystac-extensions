@@ -4,8 +4,6 @@ from typing import Final, List, Optional
 
 import pystac
 import pystac.errors
-import pystac.validation
-import pystac.validation.stac_validator
 from pydantic import BaseModel, Field, ValidationError
 
 from pydantic_pystac_extensions import BaseExtension
@@ -14,6 +12,8 @@ from pydantic_pystac_extensions.testing import (
     create_dummy_item,
     is_schema_url_synced,
 )
+
+from tests.utils import should_fail
 
 # Extension parameters
 SCHEMA_URI: Final = "https://stac-extensions.github.io/sentinel-2/v1.0.0/schema.json"
@@ -101,11 +101,7 @@ def test_custom():
     it_ext = MyOtherExtension.ext(item, add_if_missing=True)
 
     args = {"orbit": 10, "random_number": 53, "unwanted_arg": "Yo"}
-    try:
-        it_ext.apply(**args)  # should fail
-        assert False
-    except ValidationError:
-        pass
+    should_fail(it_ext.apply, args, exception_cls=ValueError)
 
     def _check(args):
         it_ext.apply(**args)
@@ -171,17 +167,13 @@ def test_nested_objects():
 def test_validate_incorrect_uri():
     """Test extension that ships members of type BaseModel."""
     md = {"name": "test", "authors": ["michel", "denis"], "version": "alpha"}
-    try:
-        basic_test(ext_cls=MyExtensionWAlias, validate=True, ext_md=md)
-        assert False
-    except pystac.errors.STACValidationError:
-        pass
+    should_fail(
+        basic_test,
+        {"ext_cls": MyExtensionWAlias, "validate": True, "ext_md": md},
+        exception_cls=pystac.errors.STACValidationError,
+    )
 
-    try:
-        is_schema_url_synced(MyExtensionWAlias)
-        assert False
-    except ValueError:
-        pass
+    should_fail(is_schema_url_synced, [MyExtensionWAlias], ValueError)
 
 
 def test_apply_md():
@@ -193,32 +185,37 @@ def test_apply_md():
     ext.apply(s)
 
 
+def test_apply_md_and_kwargs():
+    """Test extension that ships members of type BaseModel."""
+    item, _ = create_dummy_item()
+
+    ext = MyExt.ext(item, add_if_missing=True)
+    s = Stuff(j=3)
+    args = {"stuff": s, "j": 2, "md": {}}
+    should_fail(ext.apply, args, exception_cls=ValidationError)
+
+
 def test_apply_incorrect_args():
     """Test extension that ships members of type BaseModel."""
     item, _ = create_dummy_item()
 
     ext = MyExt.ext(item, add_if_missing=True)
     s = Stuff(j=3)
-    try:
-        ext.apply(s, j=2)
-        assert False
-    except ValueError:
-        pass
+    args = {"stuff": s, "j": 2}
+    should_fail(ext.apply, args, exception_cls=ValueError)
 
-    try:
-        ext.apply()
-        assert False
-    except ValueError:
-        pass
+    args = {}
+    should_fail(ext.apply, args, exception_cls=ValueError)
 
 
 def test_init_incorrect():
     """Test extension that ships members of type BaseModel."""
-    try:
-        s = Stuff(j=3)
-        MyExt(s)
-    except pystac.ExtensionTypeError:
-        pass
+    s = Stuff(j=3)
+    args = {"stuff": s}
+    should_fail(MyExt, args, exception_cls=ValueError)
+
+    args = [1]
+    should_fail(MyExt, args, exception_cls=pystac.ExtensionTypeError)
 
 
 def test_empty_dict_as_member():
@@ -226,10 +223,9 @@ def test_empty_dict_as_member():
     basic_test(ext_cls=ExtWithDict, ext_md={"data": {}, "fdata": {}}, validate=False)
 
 
-if __name__ == "__main__":
-    test_basic()
-    test_custom()
-    test_several_extensions()
-    test_nested_objects()
-    test_validate_incorrect_uri()
-    test_apply_md()
+def test_ext_invalid_type():
+    """Test an extension which has an empty dict as member value."""
+
+    should_fail(
+        MyExt.ext, args={"obj": 3}, exception_cls=pystac.errors.ExtensionTypeError
+    )

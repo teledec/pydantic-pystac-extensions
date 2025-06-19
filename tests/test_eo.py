@@ -23,7 +23,3 @@ class EOExtensionOverride(EOExtension):
 def test_basic():
     """Use basic test."""
     is_schema_url_synced(EOExtensionOverride)
-
-
-if __name__ == "__main__":
-    test_basic()

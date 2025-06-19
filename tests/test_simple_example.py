@@ -36,8 +36,10 @@ item = pystac.Item(
 MyExtension.has_extension(item)  # False
 processing_ext = MyExtension.ext(item, add_if_missing=True)
 processing_ext.apply(name="thing", authors=["sylvie", "andre"], version="1.0.0")
-MyExtension.has_extension(item)  # True
+uri = processing_ext.get_schema_uri()
+assert len(uri) > 2
 
+MyExtension.has_extension(item)  # True
 
 # Fetch the metadata from an item
 my_ext = MyExtension(item)  # type: ignore

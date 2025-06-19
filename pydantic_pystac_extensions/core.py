@@ -29,14 +29,13 @@ class PystacExtensionAdapter(
     def __init__(self, obj: T, extension_cls: Any = None):
         """Initializer."""
         self.extension_cls = extension_cls
+        self.__class__.__name__ = (
+            f"{obj.__class__.__name__}{self.extension_cls.__name__}"
+        )
         if isinstance(obj, pystac.Item):
             self.properties = obj.properties
         elif isinstance(obj, (pystac.Asset, pystac.Collection)):
             self.properties = obj.extra_fields
-        else:
-            raise pystac.ExtensionTypeError(
-                f"{self.__class__.__name__} cannot be instantiated from type {type(obj).__name__}"
-            )
 
     def apply(self, md: Optional["BaseExtension"] = None, **kwargs):
         """Apply the metadata."""
@@ -58,7 +57,12 @@ class PystacExtensionAdapter(
     @classmethod
     def get_schema_uri(cls) -> str:
         """Get schema URI."""
-        return cls.__schema_uri__
+        if cls.__schema_uri__:
+            return cls.__schema_uri__
+
+        # Else, class is of type ItemExtension, AssetExtension...
+        _parent_class = cls.__orig_bases__[0].__args__[0]  # type: ignore # pylint: disable=no-member
+        return _parent_class.__schema_uri__
 
     @classmethod
     def get_schema(cls) -> dict:
@@ -95,15 +99,25 @@ class PystacExtensionAdapter(
         "CollectionCustomExtension",
     ]:
         """Create the extension."""
+
+        class ItemExt(ItemCustomExtension[cls]):  # type: ignore
+            """Item extension."""
+
+        class AssetExt(AssetCustomExtension[cls]):  # type: ignore
+            """Asset extension."""
+
+        class CollectionExt(CollectionCustomExtension[cls]):  # type: ignore
+            """Collection extension."""
+
         if isinstance(obj, pystac.Item):
             cls.ensure_has_extension(obj, add_if_missing)
-            return ItemCustomExtension(obj, cls)
+            return ItemExt(obj, cls)
         if isinstance(obj, pystac.Asset):
             cls.ensure_owner_has_extension(obj, add_if_missing)
-            return AssetCustomExtension(obj, cls)
+            return AssetExt(obj, cls)
         if isinstance(obj, pystac.Collection):
             cls.ensure_has_extension(obj, add_if_missing)
-            return CollectionCustomExtension(obj, cls)
+            return CollectionExt(obj, cls)
         raise pystac.ExtensionTypeError(
             f"{cls.__name__} does not apply to type {type(obj).__name__}"
         )
@@ -113,11 +127,18 @@ class PystacExtensionAdapter(
         return self.properties
 
 
-class ItemCustomExtension(PystacExtensionAdapter[pystac.Item]):
+BaseExtensionTypeVar = TypeVar("BaseExtensionTypeVar", bound="BaseExtension")
+
+
+class ItemCustomExtension(
+    Generic[BaseExtensionTypeVar], PystacExtensionAdapter[pystac.Item]
+):
     """Item custom extension."""
 
 
-class AssetCustomExtension(PystacExtensionAdapter[pystac.Asset]):
+class AssetCustomExtension(
+    Generic[BaseExtensionTypeVar], PystacExtensionAdapter[pystac.Asset]
+):
     """Asset custom extension."""
 
     asset_href: str
@@ -125,7 +146,7 @@ class AssetCustomExtension(PystacExtensionAdapter[pystac.Asset]):
     additional_read_properties: Iterable[dict[str, Any]] | None = None
 
 
-class CollectionCustomExtension(PystacExtensionAdapter[pystac.Collection]):
+class CollectionCustomExtension(Generic[T], PystacExtensionAdapter[pystac.Collection]):
     """Collection curstom extension."""
 
     properties: dict[str, Any]
