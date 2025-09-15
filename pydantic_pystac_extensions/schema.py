@@ -8,13 +8,14 @@ def generate_schema(
     model_cls: Type[BaseModel], title: str, description: str, schema_uri: str
 ) -> dict:
     """Generate the schema."""
-    properties = model_cls.model_json_schema()
+    raw_schema = model_cls.model_json_schema()
     # prune "required" and "additionalProperties"
-    properties.pop("required", None)
-    properties["properties"].pop("properties", None)
-    properties["properties"].pop("additional_read_properties", None)
-    properties.pop("additionalProperties", None)
-    return {
+    raw_schema.pop("required", None)
+    raw_schema["properties"].pop("properties", None)
+    raw_schema["properties"].pop("additional_read_properties", None)
+    raw_schema.pop("additionalProperties", None)
+    defs = raw_schema.pop("$defs", {})
+    schema = {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "$id": schema_uri,
         "title": title,
@@ -85,6 +86,9 @@ def generate_schema(
                 "type": "object",
                 "additionalProperties": {"$ref": "#/definitions/fields"},
             },
-            "fields": properties,
+            "fields": raw_schema,
         },
     }
+    if defs:
+        schema.update({"$defs": defs})
+    return schema

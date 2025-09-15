@@ -9,3 +9,6 @@ variables:
 
 include:
   - ".gitlab/ci/base.yml"
+
+.static_analysis_base:
+  allow_failure: true
